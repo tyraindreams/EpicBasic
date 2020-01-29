@@ -1,0 +1,17 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <RegularExpression>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <pcre.h>
+
+TLink <-lpcre>
+
+ExternalProcedure.p CompileRegularExpression(RegularExression.s)
+ExternalProcedure.i ExamineRegularExpression(RegularExression.p, Query.s)
+ExternalProcedure.i NextRegularExpressionMatch(RegularExression.p)
+ExternalProcedure   FreeRegularExpression(RegularExression.p)
+ExternalProcedure.s RegularExpressionMatchString(RegularExression.p)
+ExternalProcedure.i RegularExpressionMatchGroup(RegularExression.p)
+ExternalProcedure.i RegularExpressionMatchPosition(RegularExression.p)

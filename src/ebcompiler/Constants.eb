@@ -1,0 +1,263 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic TargetCPP11                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure BlockConstant()
+   
+   While TokenType() = #TypeConstant
+      
+      If CommentPassthrough = #True
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         AddProcedureEmit("// "+PeekS(PeekP(CurrentListElement(ActiveLines))))
+         
+      EndIf
+      
+      ConstantName.s = Token()
+      
+      NextToken()
+      
+      If TokenType() != #TypeOperatorEqual
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         ErrorSuggest("Syntax error. Constant must be assigned a literal value.", "Syntax: '#ConstantName = 1' Or '#ConstantName = 1.5' Or '#ConstantName = \"String\"'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      NextToken()
+      
+      CurrentTokenType.b = TokenType()
+      
+      If CurrentTokenType = #TypeInteger
+         
+         CreateConstant(ConstantName, CheckRange(Val(Token())), Token(), CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+         
+      ElseIf CurrentTokenType = #TypeFloat
+         
+         CreateConstant(ConstantName, #VariableTypeFloat, Token(), CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+         
+      ElseIf CurrentTokenType = #TypeString
+         
+         CreateConstant(ConstantName, #VariableTypeString, Token(), CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         ErrorSuggest("Syntax error. Constant must be assigned a literal value.", "Syntax: #ConstantName = 1 Or 1.5 Or \"String\"", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      GarbageCheck()
+      
+      NextElement(ActiveTokenTable)
+      
+   Wend
+   
+   PreviousElement(ActiveTokenTable)
+   AddProcedureEmit("")
+   
+EndProcedure
+
+
+Procedure BlockEnumeration()
+   
+   EnumerateValue.l = 0
+   
+   GarbageCheck()
+   
+   SeekToken()
+   
+   While TokenType() != #TypeKeywordEndEnumeration
+      
+      If TokenType() = #TypeConstant
+         
+         CreateConstant(Token(), CheckRange(EnumerateValue), Str(EnumerateValue), CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+         
+         EnumerateValue + 1
+         
+         GarbageCheck()
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Only constants can be enumerated.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      SeekToken()
+      
+   Wend
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+EndProcedure
+
+
+Procedure ConfigureConstant()
+   
+    NextToken()
+   
+   If TokenType() != #TypeType
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected constant type.", "Syntax: CompilerConfigure.type #ConstantName = \"Default Value\"", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   CurrentType.b = CheckType()
+   
+   NextToken()
+   
+   If TokenType() != #TypeConstant
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected constant name.", "Syntax: CompilerConfigure.type #ConstantName = \"Default Value\"", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   ConstantName.s = Token()
+   
+   NextToken()
+
+   If TokenType() != #TypeOperatorEqual
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Constant must be assigned a default value.", "Syntax: CompilerConfigure.type #ConstantName = \"Default Value\"", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   NextToken()
+   
+   If TokenType() != #TypeString
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Constant must be assigned a default value.", "Syntax: CompilerConfigure.type #ConstantName = \"Default Value\"", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   If ConfigureDefaults
+      
+      While 1
+         
+         Print("\n"+ConstantName+"=["+Token()+"]? ")
+         Value.s = Input()
+         PrintN("")
+         
+         If Len(Value) = 0
+            Value = Mid(Token(), 1, Len(Token())-2)
+         EndIf
+         
+         If IsANumber(Value) And CurrentType != #VariableTypeString
+            
+            Break
+            
+         ElseIf CurrentType = #VariableTypeString
+            
+            Break
+            
+         EndIf
+         
+         PrintN("Value must be a number")
+         
+      Wend
+      
+      If CurrentType = #VariableTypeString
+         
+         CreateConstant(ConstantName, CurrentType, "\""+Value+"\"", CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+         
+      Else
+         
+         CreateConstant(ConstantName, CurrentType, Value, CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+         
+      EndIf
+      
+   Else 
+      
+      If CurrentType = #VariableTypeString
+         
+         CreateConstant(ConstantName, CurrentType, Token(), CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+         
+      Else
+         
+         Value = Mid(Token(), 1, Len(Token())-2)
+         
+         If IsANumber(Value)
+            
+            CreateConstant(ConstantName, CurrentType, Value, CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+            
+         Else
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Value must match type.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+      EndIf
+      
+   EndIf
+   
+   GarbageCheck()
+   
+EndProcedure
+
+
+Procedure.b ConstantType(ConstantName.s)
+   
+   If FindMapKey(ConstantMap, ConstantName) = #False
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(ConstantName + " is not a declared constant.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetMapElement(ConstantMap, ConstantName)
+   
+   CurrentConstant.p = CurrentMapElement(ConstantMap)
+   
+   ProcedureReturn PeekB(CurrentConstant+#ByteSize+#PointerSize)
+   
+EndProcedure
+
+
+Procedure.s ConstantMacro(ConstantName.s)
+   
+   If FindMapKey(ConstantMap, ConstantName) = #False
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(ConstantName + " is not a declared constant.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetMapElement(ConstantMap, ConstantName)
+   
+   CurrentConstant.p = CurrentMapElement(ConstantMap)
+   
+   ProcedureReturn PeekS(PeekP(CurrentConstant+#ByteSize))
+   
+EndProcedure
+

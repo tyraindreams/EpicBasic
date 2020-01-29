@@ -1,0 +1,154 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Compiler                                 
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+CallDebugger
+
+Import <Console>
+Import <File>
+Import <FileSystem>
+Import <RegularExpression>
+Import <Memory>
+Import <System>
+Import <String>
+Import <Process>
+
+XIncludeFile "./Declare.eb"
+XIncludeFile "./Global.eb"
+XIncludeFile "./EBTokens.eb"
+XIncludeFile "./Literal.eb"
+XIncludeFile "./Structures.eb"
+XIncludeFile "./GlobalData.eb"
+XIncludeFile "./ProcedureData.eb"
+XIncludeFile "./Conditionals.eb"
+XIncludeFile "./Include.eb"
+XIncludeFile "./Translation.eb"
+XIncludeFile "./Loops.eb"
+XIncludeFile "./Import.eb"
+XIncludeFile "./MapsLists.eb"
+XIncludeFile "./Error.eb"
+XIncludeFile "./Tokenize.eb"
+XIncludeFile "./TokenTable.eb"
+XIncludeFile "./CheckType.eb"
+XIncludeFile "./GarbageCheck.eb"
+XIncludeFile "./Constants.eb"
+XIncludeFile "./Comments.eb"
+XIncludeFile "./Procedures.eb"
+XIncludeFile "./Expressions.eb"
+XIncludeFile "./Concatenate.eb"
+XIncludeFile "./TargetCPP11.eb"
+XIncludeFile "./CPP11.eb"
+XIncludeFile "./EmitCPP11.eb"
+XIncludeFile "./ProgramParameters.eb"
+
+InitializeGlobals()
+CheckProgramParameters()
+
+ConsoleTextBold() : ConsoleTextColor(2) :       Print("\n") : PrintN(RepeatString("-", Len(CompilerVersion)))
+ConsoleTextColor(3) :                           PrintN(CompilerVersion)
+ConsoleTextColor(2) :                           PrintN(RepeatString("-", Len(CompilerVersion)))
+ResetConsole()
+
+MainPath = AbsolutePath(MainPath)
+
+CompileMainPath()
+
+FreeRegularExpression(Regex)
+
+PrintN("")
+
+If TotalWarnings > 0
+   
+   ConsoleTextColor(2) :                        Print(Str(TotalLines) + " lines processed")
+   
+   If TotalWarnings > 1
+      
+      ConsoleTextColor(5) :                     Print(" with "+Str(TotalWarnings)+" warnings.\n")
+      
+   Else
+      
+      ConsoleTextColor(5) :                     Print(" with "+Str(TotalWarnings)+" warning.\n")
+      
+   EndIf
+   
+Else
+   
+   ConsoleTextColor(2) :                        Print(Str(TotalLines) + " lines processed.\n")
+   
+EndIf
+
+ResetConsole()
+
+If SyntaxCheck = #False
+
+   If CommentedOnly = #True
+      
+      ConsoleTextBold() :                             Print("Creating the commented translation file ")
+      ConsoleTextColor(4) :                           Print("\""+MainPath+".cpp"+"\"\n\n")
+
+      EmitCPP11(MainPath+".cpp")
+
+   Else
+      
+      EmitCPP11(MainPath+".cpp")
+      
+      ExecutablePath = AbsolutePath(ExecutablePath)
+      
+      ResetElement(TLinkMap)
+      
+      While NextElement(TLinkMap)
+         LinkPaths.s + CurrentMapKey(TLinkMap) + " "
+      Wend
+      
+      ConsoleTextBold() :                             Print("Creating the binary ")
+      ConsoleTextColor(4) :                           Print("\""+ExecutablePath+"\"\n\n")
+      ResetConsole()
+      
+      If DebuggerFlag = #True
+         
+         MainPath = "-g\" \"" + MainPath
+         
+      EndIf
+
+      If RunProgram("clang++ \"" + MainPath + ".cpp\" -o \"" + ExecutablePath + "\" " + OLevel + " " + LinkPaths) != #Exit_Success
+         
+         ConsoleTextBold() :                          Print("\nError: Unable to assemble for target using clang++\n")
+                                                      Print("Falling back to g++\n\n")
+         ResetConsole()
+         
+         If RunProgram("g++ \"" + MainPath + ".cpp\" -o \"" + ExecutablePath + "\" " + OLevel + " " + LinkPaths) != #Exit_Success
+            
+            ConsoleTextBold() :                       Print("\nError: Unable to assemble for target using g++\n")
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+      EndIf
+      
+      DeleteFile(MainPath+".cpp")
+      
+      ConsoleTextBold() :                             Print("Attempting to strip the object symbols from the binary\n")
+      
+      If DebuggerFlag = #False
+         
+         If RunProgram("strip \""+ ExecutablePath + "\"") = #Exit_Failure
+            
+                                                     Print("Unable to strip the object symbols from the binary.\n")
+            
+         EndIf
+         
+      EndIf
+      
+   EndIf
+   
+EndIf
+
+ResetConsole() : ConsoleTextBold() :                 PrintN("\n- I've got a fever and the only prescription is MoreCowbell() -\n")
+ResetConsole()
+
+
+End #Exit_Success

@@ -1,0 +1,24 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <Thread>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <pthread.h>
+TIncludeFile <semaphore.h>
+
+TLink <-lpthread>
+
+ExternalProcedure.p CreateThread(ProcedureReference.p, Parameters.p)
+ExternalProcedure   ExitThread()
+ExternalProcedure.i WaitThread(Thread.p, ReturnMemory.p)
+ExternalProcedure.i DetachThread(Thread.p)
+ExternalProcedure.p CreateSemaphore(Value.i)
+ExternalProcedure.i WaitSemaphore(Semaphore.p)
+ExternalProcedure.i SignalSemaphore(Semaphore.p)
+ExternalProcedure.i CountSemaphore(Semaphore.p)
+ExternalProcedure   FreeSemaphore(Semaphore.p)
+ExternalProcedure.p CreateMutex()
+ExternalProcedure.i LockMutex(Mutex.p)
+ExternalProcedure.i UnlockMutex(Mutex.p)
+ExternalProcedure   FreeMutex(Mutex.p)

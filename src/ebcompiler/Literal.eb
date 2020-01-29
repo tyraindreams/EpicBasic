@@ -1,0 +1,30 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Literal                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure.b CheckRange(Value.q)
+   
+   If Value >= -127 And Value <= 127
+   
+      ProcedureReturn #VariableTypeByte
+      
+   ElseIf Value >= -32767 And Value <= 332767
+   
+      ProcedureReturn #VariableTypeWord
+      
+   ElseIf Value >= -2147483647 And Value <= 2147483647
+   
+      ProcedureReturn #VariableTypeLong
+      
+   ElseIf Value >= -9223372036854775807 And Value <= 9223372036854775807
+      
+      ProcedureReturn #VariableTypeQuad
+      
+   EndIf
+   
+   ProcedureReturn #VariableTypeNull
+   
+EndProcedure

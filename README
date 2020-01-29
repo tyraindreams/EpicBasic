@@ -1,0 +1,35 @@
+    The EpicBasic Compiler
+
+Usage
+   ebcompiler "path/file.eb"
+
+Options
+   -t     | --translation              Output a target translation file instead of a binary.
+   -c     | --commented                Output a target translation file that includes comments from the EpicBasic source file.
+   -cd    | --configure-defaults       Prompt to configure the value of configurable constants.
+   -ih    | --inline-header            Inline the library headers to make the translation portable.
+   -coff  | --colors-off               Force disable colorized console output. (auto select mode by default)
+   -con   | --colors-on                Force enable colorized console output.
+   -O#    |                            Set the optimizer level to pass to the C++ compiler
+   -s     | --syntax                   Syntax check the MainFile only.
+   -wt    | --warning-threshhold #     Set the maximum number of warnings to report in detail. (Default is 0)
+   -d     | --debugger                 Compile with debugger.
+   -o     | --output "/path/file"      Outputs binary to path.
+   -v     | --version                  Output the compiler's version string
+
+Environment Variables
+   EPICBASIC_HOME_PATH   | Home path of the EpicBasic directory. (Not implemented)
+   EPICBASIC_HEADER_PATH | Path to module headers.
+   EPICBASIC_MODULE_PATH | Path to module resources.
+
+Language requires clang or gcc and also requires libpcre-dev
+
+To build the progenitor compiler run:
+
+$ clang++ ./src/progenitor/Main.eb.cpp -o ./progenitor.bin -std=c++11 -lpcre
+
+To build the actual compiler run:
+
+$ export EPICBASIC_HEADER_PATH=./modules/
+$ export EPICBASIC_MODULE_PATH=./modules/
+$ ./progenitor ./src/ebcompiler/EBCompiler.eb -o ./ebcompiler

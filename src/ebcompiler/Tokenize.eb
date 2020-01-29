@@ -1,0 +1,103 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Compiler Tokenizer                       
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure TokenizeSourceFile(Path.s)
+   
+   If FindMapKey(Files, Path)
+      
+      ProcedureReturn
+      
+   EndIf
+   
+   SetMapElement(Files, Path)
+   
+   CurrentFilesElement.p = CurrentMapElement(Files)
+   
+   File.i = ReadFile(Path)
+   
+   If File = -1
+      
+      ConsoleTextBold() : ConsoleTextColor(1) :    Print("Error")
+      ResetConsole() : ConsoleTextBold() :         PrintN(": Unable to open file: "+Path)
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   Tokens.p = NewList(#PointerSize+#ByteSize+#LongSize+#LongSize)
+   Lines.p = NewList(#PointerSize)
+   
+   PokeP(CurrentFilesElement+#OffsetOf_Files_Tokens, Tokens)
+   PokeP(CurrentFilesElement+#OffsetOf_Files_Lines, Lines)
+   
+   Line.l
+   
+   While Eof(File) != #True
+      
+      Line = Line + 1
+      
+      CurrentLine.s = ReadString(File)
+      
+      AddListElement(Lines)
+      
+      CurrentLinesElement.p = CurrentListElement(Lines)
+      
+      PokeP(CurrentLinesElement, DuplicateString(CurrentLine))
+      
+      If ExamineRegularExpression(Regex, CurrentLine)
+         
+         While NextRegularExpressionMatch(Regex)
+            
+            TokenType.b = RegularExpressionMatchGroup(Regex)
+            
+            If TokenType = #TypeUnknown
+               
+               Error("Syntax Error. Unknown token.", Path, CurrentLine, Line, RegularExpressionMatchPosition(Regex))
+               End #Exit_Failure
+               
+            ElseIf TokenType != #TypeWhiteSpace
+            
+               If TokenType = #TypeComment And CommentPassthrough = #False
+                  
+               Else
+                  
+                  AddListElement(Tokens)
+                  
+                  CurrentElement.p = CurrentListElement(Tokens)
+                  
+                  PokeP(CurrentElement, DuplicateString(RegularExpressionMatchString(Regex)))
+                  PokeB(CurrentElement+#PointerSize, TokenType)
+                  PokeL(CurrentElement+#PointerSize+#ByteSize, Line)
+                  PokeL(CurrentElement+#PointerSize+#ByteSize+#LongSize, RegularExpressionMatchPosition(Regex))
+                  
+               EndIf
+               
+            EndIf
+            
+         Wend
+      
+      EndIf
+      
+      AddListElement(Tokens)
+      
+      CurrentElement = CurrentListElement(Tokens)
+      
+      PokeP(CurrentElement, DuplicateString(":"))
+      PokeB(CurrentElement+#PointerSize, #TypeEndLine)
+      PokeL(CurrentElement+#PointerSize+#ByteSize, Line)
+      PokeL(CurrentElement+#PointerSize+#ByteSize+#LongSize, Len(CurrentLine)+1)
+      
+   Wend
+      
+   ResetElement(Tokens)
+   ResetElement(Lines)
+   
+   TotalLines = TotalLines + Line
+   
+   CloseFile(File)
+   
+EndProcedure

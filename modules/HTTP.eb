@@ -1,0 +1,11 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <HTTP>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <string>
+TIncludeFile <cstring>
+
+ExternalProcedure.s URLEncoder(String.s)
+ExternalProcedure.s URLDecoder(String.s)

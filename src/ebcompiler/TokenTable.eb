@@ -1,0 +1,78 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic TokenTable                               
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure SetFile(Path.s)
+   
+   SetMapElement(Files, Path)
+   ActiveTokenTable = PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Tokens)
+   ResetElement(ActiveTokenTable)
+   ActiveLines = PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)
+   
+EndProcedure
+
+Procedure.s Token()
+
+   ProcedureReturn PeekS(PeekP(CurrentListElement(ActiveTokenTable)))
+
+EndProcedure
+
+Procedure.b TokenType()
+
+   ProcedureReturn PeekB(CurrentListElement(ActiveTokenTable)+#PointerSize)
+
+EndProcedure
+
+Procedure.l TokenLine()
+
+   ProcedureReturn PeekL(CurrentListElement(ActiveTokenTable)+#PointerSize+#ByteSize)
+
+EndProcedure
+
+Procedure.l TokenPosition()
+
+   ProcedureReturn PeekL(CurrentListElement(ActiveTokenTable)+#PointerSize+#ByteSize+#LongSize)
+
+EndProcedure
+
+
+Procedure.b SeekToken()
+   
+   While NextElement(ActiveTokenTable)
+      
+      If TokenType() = #TypeComment
+         
+         AddProcedureEmit("// " + Token())
+         
+      EndIf
+      
+      If TokenType() != #TypeEndLine And TokenType() != #TypeComment
+         
+         ProcedureReturn #True
+         
+      EndIf
+      
+   Wend
+   
+   SetElementIndex(ActiveLines, TokenLine())
+   Error("Unexpected end of file.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+   
+   End #Exit_Failure
+   
+EndProcedure
+
+Procedure NextToken()
+   
+   If NextElement(ActiveTokenTable) = #False Or TokenType() = #TypeEndLine Or TokenType() = #TypeComment
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Unexpected end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+EndProcedure

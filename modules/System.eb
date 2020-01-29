@@ -1,0 +1,51 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <System>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <iostream>
+TIncludeFile <unistd.h>
+TIncludeFile <string>
+TIncludeFile <ctime>
+
+TConstant.s #CompilerArchitecture               = <_ebI_ARCHITECTURE_STRING>
+TConstant.i #CompilerArchitectureARM            = <_ebI_ARCHITECTURE_ARM>
+TConstant.i #CompilerArchitectureX86            = <_ebI_ARCHITECTURE_X86>
+TConstant.i #CompilerArchitectureX86_64         = <_ebI_ARCHITECTURE_X86_64>
+TConstant.i #CompilerArchitectureX86_32         = <_ebI_ARCHITECTURE_X86_32>
+TConstant.i #CompilerArchitecturePPC            = <_ebI_ARCHITECTURE_PPC>
+TConstant.i #CompilerArchitecturePPC_32         = <_ebI_ARCHITECTURE_PPC_64>
+TConstant.i #CompilerArchitecturePPC_64         = <_ebI_ARCHITECTURE_PPC_32>
+TConstant.i #CompilerArchitectureCellSPU        = <_ebI_ARCHITECTURE_CELLSPU>
+TConstant.i #CompilerArchitectureMIPS           = <_ebI_ARCHITECTURE_MIPS>
+TConstant.i #CompilerArchitecturePNACL          = <_ebI_ARCHITECTURE_PNACL>
+TConstant.i #CompilerArchitectureEmscripten     = <_ebI_ARCHITECTURE_EMSCRIPTEN>
+TConstant.s #CompilerPlatform                   = <_ebI_PLATFORM_STRING>
+TConstant.i #CompilerPlatformUnixLike           = <_ebI_PLATFORM_UNIXLIKE>
+TConstant.i #CompilerPlatformUnix               = <_ebI_PLATFORM_UNIX>
+TConstant.i #CompilerPlatformBSD                = <_ebI_PLATFORM_BSD>
+TConstant.i #CompilerPlatformWindows            = <_ebI_PLATFORM_WINDOWS>
+TConstant.i #CompilerPlatformFreeBSD            = <_ebI_PLATFORM_FREEBSD>
+TConstant.i #CompilerPlatformNetBSD             = <_ebI_PLATFORM_NETBSD>
+TConstant.i #CompilerPlatformOpenBSD            = <_ebI_PLATFORM_OPENBSD>
+TConstant.i #CompilerPlatformDragonFlyBSD       = <_ebI_PLATFORM_DRAGONFLYBSD>
+TConstant.i #CompilerPlatformHPUX               = <_ebI_PLATFORM_HPUX>
+TConstant.i #CompilerPlatformAIX                = <_ebI_PLATFORM_AIX>
+TConstant.i #CompilerPlatformSolaris            = <_ebI_PLATFORM_SOLARIS>
+TConstant.i #CompilerPlatformOSX                = <_ebI_PLATFORM_OSX>
+TConstant.i #CompilerPlatformLinux              = <_ebI_PLATFORM_LINUX>
+TConstant.i #CompilerPlatformHaiku              = <_ebI_PLATFORM_HAIKU>
+
+ExternalProcedure.s UserName()
+
+ExternalProcedure.d LoadAverage(Index.i)
+TConstant.b #1Minute  = <0>
+TConstant.b #5Minute  = <1>
+TConstant.b #15Minute = <2>
+
+ExternalProcedure   Delay(Time.i)
+ExternalProcedure   MoreCowbell()
+ExternalProcedure.i Time()
+ExternalProcedure.p GMTTime(Time.i)
+ExternalProcedure.p LocalTime(Time.i)

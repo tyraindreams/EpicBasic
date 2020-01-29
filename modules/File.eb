@@ -1,0 +1,33 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <File>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <fcntl.h>
+TIncludeFile <cstdio>
+TIncludeFile <unistd.h>
+TIncludeFile <sys/types.h>
+
+TLink <-std=c++11>
+
+TConstant.i #File_STDIN  = <STDIN_FILENO>
+TConstant.i #File_STDOUT = <STDOUT_FILENO>
+TConstant.i #File_STDERR = <STDERR_FILENO>
+
+ExternalProcedure.i OpenFile(Path.s)
+ExternalProcedure.i ReadFile(Path.s)
+ExternalProcedure.i CreateFile(Path.s)
+ExternalProcedure   CloseFile(File.i)
+ExternalProcedure.l Read(File.i, Buffer.p, Size.l)
+ExternalProcedure.l Write(File.i, Buffer.p, Size.l)
+ExternalProcedure.c ReadCharacter(File.i)
+ExternalProcedure.s ReadString(File.i)
+ExternalProcedure   WriteCharacter(File.i, Character.c)
+ExternalProcedure   WriteString(File.i, String.s)
+ExternalProcedure   WriteStringN(File.i, String.s)
+ExternalProcedure.i Eof(File.i)
+ExternalProcedure.i Loc(File.i)
+ExternalProcedure.i Lof(File.i)
+ExternalProcedure.i FileSeek(File.i, Position.l)
+ExternalProcedure.b WaitFileEvent(File.i, Timeout.l)

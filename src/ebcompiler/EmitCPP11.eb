@@ -1,0 +1,454 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic EmitCPP11                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure EmitCPP11(OutPutPath.s)
+      
+   File.i = CreateFile(OutPutPath)
+   
+   If File = -1
+      ConsoleTextBold() : ConsoleTextColor(1) :    Print("Error")
+      ResetConsole() : ConsoleTextBold() :         PrintN(": Unable to open output file: " + OutPutPath)
+      End #Exit_Failure
+   EndIf
+   
+   If CommentPassthrough = #True
+      
+      WriteStringN(File, "")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "// ; TIncludeFile List")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "")
+      
+   EndIf
+   
+   ResetElement(TIncludeFileMap)
+   
+   While NextElement(TIncludeFileMap)
+      
+      WriteStringN(File, "#include <" + CurrentMapKey(TIncludeFileMap) + ">")
+      
+   Wend
+   
+   WriteStringN(File, "")
+   
+   If CommentPassthrough = #True
+      
+      WriteStringN(File, "")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "// ; Import")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "")
+      
+   EndIf
+   
+   ResetElement(ImportMap)
+   
+   While NextElement(ImportMap)
+      
+      ResetElement(HeaderPath)
+      
+      Repath.s = ""
+      
+      While NextElement(HeaderPath)
+         
+         If PathSize(CurrentMapKey(HeaderPath)+CurrentMapKey(ImportMap)+".cpp") != -1
+            
+            Repath = CurrentMapKey(HeaderPath)
+            Break
+            
+         EndIf
+         
+      Wend
+      
+      If Repath = ""
+         
+         ConsoleTextBold() : ConsoleTextColor(1) :    Print("Error")
+         ResetConsole() : ConsoleTextBold() :         PrintN(": Header file was not found in search paths: " + CurrentMapKey(ImportMap))
+         End #Exit_Failure
+         
+      EndIf
+      
+      If InlineHeader = #True
+         
+         HeaderFile.i = ReadFile(Repath + CurrentMapKey(ImportMap)+".cpp")
+         
+         If HeaderFile = -1
+            ConsoleTextBold() : ConsoleTextColor(1) :    Print("Error")
+            ResetConsole() : ConsoleTextBold() :         PrintN(": Unable to open header file: " + Repath + CurrentMapKey(ImportMap))
+            End #Exit_Failure
+         EndIf
+         
+         While Eof(HeaderFile) = #False
+            
+            WriteStringN(File, ReadString(HeaderFile))
+            
+         Wend
+         
+         CloseFile(HeaderFile)
+         
+         WriteStringN(File, "")
+         
+      Else
+         
+         WriteStringN(File, "#include <" + Repath + CurrentMapKey(ImportMap) + ".cpp>")
+         
+      EndIf
+      
+   Wend
+   
+   WriteStringN(File, "")
+   
+   If DebuggerFlag = #True
+      
+      ResetElement(DebuggerReference)
+      
+      While NextElement(DebuggerReference)
+         
+         WriteStringN(File, "#define _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + " \"" + CurrentMapKey(DebuggerReference) + "\"")
+         
+      Wend
+      
+      WriteStringN(File, "")
+      
+   EndIf
+   
+   If ElementCount(StructureMap)
+      
+      If CommentPassthrough = #True
+         
+         WriteStringN(File, "")
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         WriteStringN(File, "// ; Structured type declarations.")
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         WriteStringN(File, "")
+         
+      EndIf
+      
+      ResetElement(StructureMap)
+      
+      While NextElement(StructureMap)
+         
+         If CommentPassthrough = #True
+            
+            WriteStringN(File, "")
+            WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+            WriteStringN(File, "// ; Structure "+CurrentMapKey(StructureMap))
+            WriteStringN(File, "// ;    Declared in " + PeekS(PeekP(CurrentMapElement(StructureMap)+#PointerSize)) + " on line " + Str(PeekL(CurrentMapElement(StructureMap)+#PointerSize+#PointerSize)))
+            WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+            WriteStringN(File, "")
+            
+         EndIf
+         
+         WriteStringN(File, "struct _ebS_"+CurrentMapKey(StructureMap)+" {")
+         
+         Current.p = CurrentMapElement(StructureMap)
+         StructField.p = PeekP(Current)
+         
+         ResetElement(StructField)
+         
+         While NextElement(StructField)
+            
+            Type.b = PeekB(CurrentMapElement(StructField))
+            
+            WriteString(File, Space(3))
+            
+            WriteString(File, CPP11Type(Type))
+            
+            WriteString(File, "_ebF_")
+            
+            If Type = #VariableTypeString Or Type = #VariableTypePointer
+               
+               WriteStringN(File, CurrentMapKey(StructField)+" ;")
+               
+            Else
+               
+               WriteStringN(File, CurrentMapKey(StructField)+" = 0 ;")
+               
+            EndIf
+            
+         WEnd
+         
+         WriteStringN(File, "} ;")
+         WriteStringN(File, "")
+         
+      WEnd
+      
+   EndIf
+   
+   ResetElement(ProcedureList)
+   
+   If CommentPassthrough = #True
+      
+      WriteStringN(File, "")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "// ; Procedure Declarations")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "")
+      
+   EndIf
+   
+   While NextElement(ProcedureList)
+      
+      SetMapElement( ProcedureMap, CurrentMapKey(ProcedureList))
+      ActiveProcedure = CurrentMapElement(ProcedureMap)
+      
+      SetFile(PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)))
+      SetElementIndex(ActiveLines, PeekL(ActiveProcedure+#OffsetOf_Procedures_DeclaredLine))
+      
+      If CommentPassthrough = #True
+         
+         WriteStringN(File, "")
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         
+         If CurrentMapKey(ProcedureList) = "_EBMain"
+            
+            WriteStringN(File, "// ; This is the entry point of the main file.")
+            
+         Else
+            
+            WriteStringN(File, "// ; " + PeekS(PeekP(CurrentListElement(ActiveLines))))
+            
+         EndIf
+         
+         WriteStringN(File, "// ;    Declared in " + CurrentMapKey(Files) + " on line " + Str(PeekL(ActiveProcedure+#OffsetOf_Procedures_DeclaredLine)))
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         WriteStringN(File, "")
+         
+      EndIf
+      
+      Current = CurrentMapElement(ProcedureMap)
+      
+      Type = PeekB(Current+#OffsetOf_Procedures_ReturnType)
+         
+      WriteString(File, CPP11Type(Type))
+   
+      WriteString(File, "_ebP_" + CurrentMapKey(ProcedureList)+"(")
+      
+      Parameters.p = PeekP(Current+#OffsetOf_Procedures_Parameters)
+      ResetElement(Parameters)
+      
+      If ElementCount(Parameters)
+      
+         For c.l = 1 To ElementCount(Parameters)+1 Step 1
+            
+            NextElement(Parameters)
+            
+            Type = PeekB(CurrentMapElement(Parameters))
+            
+            WriteString(File, CPP11Type(Type))
+            
+            WriteString(File, "_ebV_" + CurrentMapKey(Parameters))
+            
+            If c != ElementCount(Parameters)
+               WriteString(File, ", ")
+            EndIf
+            
+         Next
+         
+      EndIf
+      
+      WriteStringN(File, ") ;")
+      WriteStringN(File, "")
+      
+   Wend
+   
+   If CommentPassthrough = #True
+      
+      WriteStringN(File, "")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "// ; Main initializations.")
+      WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+      WriteStringN(File, "")
+      
+   EndIf
+   
+   WriteStringN(File, "int main(int argc, char ** argv){")
+   WriteStringN(File, "")
+   ResetElement(TInitializeMap)
+   
+   While NextElement(TInitializeMap)
+      
+      WriteStringN(File, Space(3) + CurrentMapKey(TInitializeMap))
+      
+   Wend
+   
+   WriteStringN(File, "")
+   If DebuggerFlag = #True
+      WriteStringN(File, Space(3) + "try {")
+   EndIf
+   WriteStringN(File, Space(3) + "_ebP__EBMain() ;")
+   If DebuggerFlag = #True
+      WriteStringN(File, Space(3) + "} catch (...) {")
+      WriteStringN(File, Space(3) + "_ebD_CallDebugger(_ebD_Debugger_Flag_Exception, \"\") ;")
+      WriteStringN(File, Space(3) + "}")
+   EndIf
+   WriteStringN(File, Space(3) + "return EXIT_SUCCESS ;")
+   WriteStringN(File, "")
+   WriteStringN(File, "}")
+   
+   WriteStringN(File, "")
+   
+   If ElementCount(GlobalMap)
+      
+      If CommentPassthrough = #True
+         
+         WriteStringN(File, "")
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         WriteStringN(File, "// ; Global variables declarations.")
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         WriteStringN(File, "")
+         
+      EndIf
+      
+      ResetElement(GlobalMap)
+      
+      While NextElement(GlobalMap)
+      
+         Current = CurrentMapElement(GlobalMap)
+         Type = PeekB(Current+#OffsetOf_Globals_GlobalType)
+         
+         WriteString(File, CPP11Type(Type))
+         
+         If Type = #VariableTypeString Or Type = #VariableTypePointer
+            
+            WriteStringN(File, "_ebV_" + CurrentMapKey(GlobalMap) + " ;")
+            
+         Else
+            
+            WriteStringN(File, "_ebV_" + CurrentMapKey(GlobalMap) + " = 0 ;")
+            
+         EndIf
+         
+      WEnd
+      
+      WriteStringN(File, "")
+      
+   EndIf
+   
+   
+   WriteStringN(File, "")
+   ResetElement(ProcedureList)
+   
+   While NextElement(ProcedureList)
+      
+      SetMapElement( ProcedureMap, CurrentMapKey(ProcedureList))
+      ActiveProcedure = CurrentMapElement(ProcedureMap)
+      
+      SetFile(PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)))
+      SetElementIndex(ActiveLines, PeekL(ActiveProcedure+#OffsetOf_Procedures_DeclaredLine))
+      
+      If CommentPassthrough = #True
+         
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         
+         If CurrentMapKey(ProcedureList) = "_EBMain"
+            
+            WriteStringN(File, "// ; This is the entry point of the main file.")
+            
+         Else
+            
+            WriteStringN(File, "// ; " + PeekS(PeekP(CurrentListElement(ActiveLines))))
+            
+         EndIf
+         
+         WriteStringN(File, "// ;    Declared in " + CurrentMapKey(Files) + " on line " + Str(PeekL(ActiveProcedure+#OffsetOf_Procedures_DeclaredLine)))
+         WriteStringN(File, "// ; ------------------------------------------------------------------------------------------")
+         WriteStringN(File, "")
+         
+      EndIf
+      
+      Current = CurrentMapElement(ProcedureMap)
+      
+      ReturnType.b = PeekB(Current+#OffsetOf_Procedures_ReturnType)
+         
+      WriteString(File, CPP11Type(ReturnType))
+   
+      WriteString(File, "_ebP_" + CurrentMapKey(ProcedureList)+"(")
+      
+      Parameters = PeekP(Current+#OffsetOf_Procedures_Parameters)
+      ResetElement(Parameters)
+      
+      If ElementCount(Parameters)
+      
+         For c = 1 To ElementCount(Parameters)+1 Step 1
+            
+            NextElement(Parameters)
+            
+            Type = PeekB(CurrentMapElement(Parameters))
+            
+            WriteString(File, CPP11Type(Type))
+            
+            WriteString(File, "_ebV_" + CurrentMapKey(Parameters))
+            
+            If c != ElementCount(Parameters)
+               WriteString(File, ", ")
+            EndIf
+            
+         Next
+         
+      EndIf
+      
+      WriteStringN(File, ") {")
+      
+      Variables.p = PeekP(Current+#OffsetOf_Procedures_Variables)
+      ResetElement(Variables)
+      
+      If ElementCount(Variables)
+      
+         For c = 1 To ElementCount(Variables)+1 Step 1
+            
+            WriteString(File, Space(3))
+            
+            NextElement(Variables)
+            
+            Type = PeekB(CurrentMapElement(Variables)+#OffsetOf_Variables_Type)
+            
+            WriteString(File, CPP11Type(Type))
+            
+            WriteString(File, "_ebV_" + CurrentMapKey(Variables))
+            
+            If Type = #VariableTypeString Or Type = #VariableTypePointer
+               
+               WriteStringN(File, " ;")
+               
+            Else
+               
+               WriteStringN(File, " = 0 ;")
+               
+            EndIf
+            
+         Next
+      
+      EndIf
+      
+      WriteStringN(File, Space(3))
+      
+      Emit.p = PeekP(Current+#OffsetOf_Procedures_Emit)
+      ResetElement(Emit)
+      
+      While NextElement(Emit)
+         
+         WriteStringN(File, PeekS(PeekP(CurrentListElement(Emit))))
+         
+      WEnd
+      
+      WriteStringN(File, Space(3))
+      WriteStringN(File, "}")
+      WriteStringN(File, "")
+      
+      If CommentPassthrough = #True
+         
+         WriteStringN(File, "")
+         WriteStringN(File, "")
+         
+      EndIf
+      
+   Wend
+   
+   CloseFile(File)
+   
+EndProcedure

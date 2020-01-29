@@ -1,0 +1,353 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Compiler Maps & Lists                    
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Structure ListRoot
+   CurrentPosition.l
+   ElementRoot.p
+   ListSize.l
+   ElementSize.l
+EndStructure
+
+Procedure.b List(List.p, Commands.s)
+   
+   Result.b = #True
+   Offset.b = 0
+   Length.i = Len(Commands)
+   
+   While Offset < Length
+      
+      If  Left(Commands, 1) = "*"
+         
+         ResetElement(List)
+         
+         Commands = Right(Commands, Length - 1)
+         
+      ElseIf  Left(Commands, 1) = ">"
+         
+         Result & NextElement(List)
+         
+         Commands = Right(Commands, Length - 1)
+         
+      ElseIf  Left(Commands, 1) = "<"
+         
+         Result & PreviousElement(List)
+         
+         Commands = Right(Commands, Length - 1)
+         
+      ElseIf  Left(Commands, 1) = "!"
+         
+         SetElementIndex(List, ElementCount(List))
+         
+         Commands = Right(Commands, Length - 1)
+         
+      ElseIf  Left(Commands, 1) = "&"
+         
+         SetElementIndex(List, 1)
+         
+         Commands = Right(Commands, Length - 1)
+         
+      ElseIf  Left(Commands, 1) = "+"
+         
+         AddListElement(List)
+         
+         Commands = Right(Commands, Length - 1)
+         
+      ElseIf  Left(Commands, 1) = "-"
+         
+         TruncateListElement(List)
+         
+         Commands = Right(Commands, Length - 1)
+         
+      EndIf
+      
+      Offset + 1
+      
+   Wend
+   
+   ProcedureReturn Result
+   
+EndProcedure
+
+; Create new list root object with no elements and return its pointer
+Procedure.p NewList(Size.l)
+   
+   ; NewList() allocates a chunk of memory to contain [ Position of current element ] | [ Pointer to first element] | [Cached list size] | [Node size for user space]
+   List.p = AllocateMemory(#SizeOf_ListRoot)
+   
+   ; Poke size of user space into root object and then initialize the rest of the values to 0
+   PokeL(List+#OffsetOf_ListRoot_ElementSize, Size)
+   PokeL(List+#OffsetOf_ListRoot_ListSize, 0)
+   PokeP(List+#OffsetOf_ListRoot_ElementRoot, 0)
+   PokeL(List+#OffsetOf_ListRoot_CurrentPosition, 0)
+   
+   ProcedureReturn List
+   
+EndProcedure
+
+
+; Return a pointer to the current user space of the List element
+Procedure.p CurrentListElement(List.p)
+   
+   NodeSize.l = PeekL(List+#OffsetOf_ListRoot_ElementSize)
+   NodeRoot.p = PeekP(List+#OffsetOf_ListRoot_ElementRoot)
+   
+   ProcedureReturn NodeRoot+(NodeSize * (PeekL(List)-1))
+   
+EndProcedure
+
+
+; Add element to end of list and set as current element
+Procedure AddListElement(List.p)
+   
+   Size.l = PeekL(List+#OffsetOf_ListRoot_ListSize)
+   
+   If Size = 0
+      
+      NodeSize.l = PeekL(List+#OffsetOf_ListRoot_ElementSize)
+      NewNode.p = AllocateMemory(NodeSize)
+      PokeP(List+#OffsetOf_ListRoot_ElementRoot, NewNode)
+      PokeL(List+#OffsetOf_ListRoot_CurrentPosition, Size + 1)
+      PokeL(List+#OffsetOf_ListRoot_ListSize, Size + 1)
+      
+   Else
+      
+      NodeSize = PeekL(List+#OffsetOf_ListRoot_ElementSize)
+      NodeRoot.p = PeekP(List+#OffsetOf_ListRoot_ElementRoot)
+      NewNode = ReAllocateMemory(NodeRoot, (NodeSize * Size) + NodeSize)
+      PokeP(List+#OffsetOf_ListRoot_ElementRoot, NewNode)
+      PokeL(List+#OffsetOf_ListRoot_CurrentPosition, Size + 1)
+      PokeL(List+#OffsetOf_ListRoot_ListSize, Size + 1)
+      
+   EndIf
+   
+EndProcedure
+
+; Remove element from end of list and set previous element as current element
+Procedure TruncateListElement(List.p)
+   
+   Size.l = PeekL(List+#OffsetOf_ListRoot_ListSize)
+   
+   If Size = 0
+      ProcedureReturn
+   ElseIf Size = 1
+      
+      FreeMemory(PeekP(List+#OffsetOf_ListRoot_ElementRoot))
+      PokeL(List+#OffsetOf_ListRoot_CurrentPosition, 0)
+      PokeL(List+#OffsetOf_ListRoot_ListSize, 0)
+      
+   Else
+      
+      NodeSize.l = PeekL(List+#OffsetOf_ListRoot_ElementSize)
+      NodeRoot.p = PeekP(List+#OffsetOf_ListRoot_ElementRoot)
+      NewNode.p = ReAllocateMemory(NodeRoot, (NodeSize * Size) - NodeSize)
+      PokeP(List+#OffsetOf_ListRoot_ElementRoot, NewNode)
+      PokeL(List+#OffsetOf_ListRoot_CurrentPosition, Size - 1)
+      PokeL(List+#OffsetOf_ListRoot_ListSize, Size - 1)
+      
+   EndIf
+   
+   ProcedureReturn
+   
+EndProcedure
+
+; Create new Map root object with no elements and return its pointer
+Procedure.p NewMap(Size.l)
+   
+   ; NewMap() allocates a chunk of memory to contain [ Position of current element ] | [ Pointer to first element] | [Cached map size] | [Node size for user space with space for pointer to key]
+   Map.p = AllocateMemory(#SizeOf_ListRoot)
+   
+   ; Poke size of user space into root object and then initialize the rest of the values to 0
+   PokeL(Map+#OffsetOf_ListRoot_ElementSize, #PointerSize+Size)
+   PokeL(Map+#OffsetOf_ListRoot_ListSize, 0)
+   PokeP(Map+#OffsetOf_ListRoot_ElementRoot, 0)
+   PokeL(Map, 0)
+   
+   ProcedureReturn Map
+   
+EndProcedure
+
+
+; Set current map element to element with corresponding Key or create it if it does not exist
+Procedure SetMapElement(Map.p, Key.s)
+   
+   Size.l = PeekL(Map+#OffsetOf_ListRoot_ListSize)
+   
+   If Size = 0
+      
+      NodeSize.l = PeekL(Map+#OffsetOf_ListRoot_ElementSize)
+      NewNode.p = AllocateMemory(NodeSize)
+      PokeP(Map+#OffsetOf_ListRoot_ElementRoot, NewNode)
+      PokeP(NewNode, DuplicateString(Key))
+      PokeL(Map, 1)
+      PokeL(Map+#OffsetOf_ListRoot_ListSize, Size + 1)
+      
+   Else
+      
+      NodeSize = PeekL(Map+#OffsetOf_ListRoot_ElementSize)
+      NodeRoot.p = PeekP(Map+#OffsetOf_ListRoot_ElementRoot)
+      KeyFound.b = #False
+      
+      For e.l = 0 To Size Step 1
+         
+         CurrentKey.s = PeekS(PeekP(NodeRoot+(NodeSize * e)))
+         
+         If CurrentKey = Key
+            
+            KeyFound = #True
+            Break
+            
+         EndIf
+         
+      Next
+      
+      If KeyFound = #False
+         
+         NewNode = ReAllocateMemory(NodeRoot, (NodeSize * Size) + NodeSize)
+         PokeP(Map+#OffsetOf_ListRoot_ElementRoot, NewNode)
+         PokeP(NewNode + (NodeSize * Size), DuplicateString(Key))
+         PokeL(Map, Size + 1)
+         PokeL(Map+#OffsetOf_ListRoot_ListSize, Size + 1)
+         
+      Else
+         
+         PokeL(Map, e+1)
+         
+      EndIf
+      
+   EndIf
+   
+EndProcedure
+
+
+; Check if element with corresponding Key exists but does not create it if it does not
+Procedure.i FindMapKey(Map.p, Key.s)
+   
+   Size.l = PeekL(Map+#OffsetOf_ListRoot_ListSize)
+   
+   If Size = 0
+      
+      KeyFound.b = #False
+      
+   Else
+      
+      NodeSize.l = PeekL(Map+#OffsetOf_ListRoot_ElementSize)
+      NodeRoot.p = PeekP(Map+#OffsetOf_ListRoot_ElementRoot)
+      KeyFound = #False
+      
+      For e.l = 0 To Size Step 1
+         
+         CurrentKey.s = PeekS(PeekP(NodeRoot+(NodeSize * e)))
+         
+         If CurrentKey = Key
+            
+            KeyFound = #True
+            Break
+            
+         EndIf
+         
+      Next
+      
+   EndIf
+   
+   ProcedureReturn KeyFound
+   
+EndProcedure
+
+
+; Return a pointer to the current user space of the List element
+Procedure.p CurrentMapElement(Map.p)
+   
+   NodeSize.l = PeekL(Map+#OffsetOf_ListRoot_ElementSize)
+   NodeRoot.p = PeekP(Map+#OffsetOf_ListRoot_ElementRoot)
+   
+   ProcedureReturn NodeRoot+(NodeSize * (PeekL(Map)-1))+#PointerSize
+   
+EndProcedure
+
+
+; Return string value of current map key
+Procedure.s CurrentMapKey(Map.p)
+   
+   NodeSize.l = PeekL(Map+#OffsetOf_ListRoot_ElementSize)
+   NodeRoot.p = PeekP(Map+#OffsetOf_ListRoot_ElementRoot)
+   
+   ProcedureReturn PeekS(PeekP(NodeRoot + (NodeSize * (PeekL(Map) - 1))))
+   
+EndProcedure
+
+
+; Attempt to move to the next element, if no next element is available return #False else move to next element and return #True
+Procedure.b NextElement(List.p)
+   
+   Size.l = PeekL(List+#OffsetOf_ListRoot_ListSize)
+   CurrentElement.l = PeekL(List)
+   
+   If CurrentElement < Size
+      
+      PokeL(List+#OffsetOf_ListRoot_CurrentPosition, CurrentElement+1)
+      ProcedureReturn #True
+      
+   Else
+      
+      ProcedureReturn #False
+      
+   EndIf
+   
+EndProcedure
+
+
+; Attempt to move to the previous element, if no previous element is available return #False else move to previous element and return #True
+Procedure.b PreviousElement(List.p)
+   
+   Size.l = PeekL(List+#OffsetOf_ListRoot_ListSize)
+   CurrentElement.l = PeekL(List)
+   
+   If CurrentElement > 1
+      
+      PokeL(List+#OffsetOf_ListRoot_CurrentPosition, CurrentElement-1)
+      ProcedureReturn #True
+      
+   Else
+      
+      ProcedureReturn #False
+      
+   EndIf
+   
+EndProcedure
+
+
+; Set element index to specified number, if index is out of range return #False, else set current element to index and return #True
+Procedure SetElementIndex(List.p, Index.l)
+   
+   Size.l = PeekL(List+#OffsetOf_ListRoot_ListSize)
+   
+   If Index > Size Or Index < 1
+      ;ProcedureReturn #False
+      ProcedureReturn
+   EndIf
+   
+   
+   PokeL(List+#OffsetOf_ListRoot_CurrentPosition, Index)
+   ;ProcedureReturn #True
+   ProcedureReturn
+   
+EndProcedure
+
+; Reset map or list to before first element
+Procedure ResetElement(List.p)
+   
+   PokeL(List+#OffsetOf_ListRoot_CurrentPosition, 0)
+   
+EndProcedure
+
+Procedure.l ElementCount(List.p)
+   ProcedureReturn PeekL(List+#OffsetOf_ListRoot_ListSize)
+EndProcedure
+
+Procedure.l ElementIndex(List.p)
+   ProcedureReturn PeekL(List)
+EndProcedure

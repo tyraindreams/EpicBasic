@@ -1,0 +1,26 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <Console>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <iostream>
+TIncludeFile <string>
+TIncludeFile <unistd.h>
+TIncludeFile <cstdio>
+
+TInitialize <_ebI_InitConsole() ;>
+
+TLink <-std=c++11>
+
+ExternalProcedure   SetTTYStatus(Status.b)
+ExternalProcedure.b GetTTYStatus()
+ExternalProcedure   PrintN(Text.s)
+ExternalProcedure   Print(Text.s)
+ExternalProcedure   Flush()
+ExternalProcedure.s Input()
+ExternalProcedure   ClearConsole()
+ExternalProcedure   ResetConsole()
+ExternalProcedure   ConsoleTextBold()
+ExternalProcedure   ConsoleTextColor(Color.i)
+ExternalProcedure   ConsoleTextBackgroundColor(Color.i)

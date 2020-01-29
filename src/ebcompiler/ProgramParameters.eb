@@ -1,0 +1,155 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic ProgramParameters                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckProgramParameters()
+   
+   MainPath = ""
+   ExecutablePath = "./epicbasic.out"
+   
+   For p.i = 1 To CountProgramParameters() Step 1
+      
+      If ProgramParameter(p) = "-v" Or ProgramParameter(p) = "--version"
+      
+                                                   PrintN(CompilerVersion)
+         
+         End #Exit_Failure
+         
+      ElseIf ProgramParameter(p) = "-t" Or ProgramParameter(p) = "--translation"
+         
+         CommentedOnly = #True
+         
+      ElseIf Left(ProgramParameter(p), 2) = "-O"
+         
+         OLevel = ProgramParameter(p)
+         
+      ElseIf ProgramParameter(p) = "-s" Or ProgramParameter(p) = "--syntax"
+         
+         SyntaxCheck = #True
+         
+      ElseIf ProgramParameter(p) = "-c" Or ProgramParameter(p) = "--commented"
+         
+         CommentPassthrough = #True
+         
+      ElseIf ProgramParameter(p) = "-cd" Or ProgramParameter(p) = "--configure-defaults"
+         
+         ConfigureDefaults = #True
+         
+      ElseIf ProgramParameter(p) = "-d" Or ProgramParameter(p) = "--debugger"
+         
+         DebuggerFlag = #True
+         
+      ElseIf ProgramParameter(p) = "-coff" Or ProgramParameter(p) = "--colors-off"
+         
+         SetTTYStatus(#False)
+         
+      ElseIf ProgramParameter(p) = "-con" Or ProgramParameter(p) = "--colors-on"
+         
+         SetTTYStatus(#True)
+         
+      ElseIf ProgramParameter(p) = "-ih" Or ProgramParameter(p) = "--inline-header"
+         
+         InlineHeader = #True
+         
+      ElseIf ProgramParameter(p) = "-wt" Or ProgramParameter(p) = "--warning-threshold"
+         
+         If p = CountProgramParameters()-1
+            PrintN("Missing warning threshold value: "+ProgramParameter(p))
+            End #Exit_Failure
+         EndIf
+         
+         WarningThreshold = Val(ProgramParameter(p+1))
+         
+         p = p + 1
+         
+      ElseIf ProgramParameter(p) = "-o" Or ProgramParameter(p) = "--output"
+         
+         If p = CountProgramParameters()-1
+            PrintN("Missing output file path: "+ProgramParameter(p))
+            End #Exit_Failure
+         EndIf
+         
+         ExecutablePath = ProgramParameter(p+1)
+         
+         p = p + 1
+         
+      ElseIf ProgramParameter(p) = "-h" Or ProgramParameter(p) = "--help"
+         
+         ConsoleTextBold() : ConsoleTextColor(2) : PrintN(RepeatString("-", Len(CompilerVersion)))
+         ConsoleTextColor(3) :                     PrintN(CompilerVersion)
+         ConsoleTextColor(2) :                     PrintN(RepeatString("-", Len(CompilerVersion)))
+         ResetConsole() : ConsoleTextBold() :      Print("\nUsage\n")
+         ResetConsole() :                          Print("   ebcompiler \"path/file.eb\"\n")
+         ConsoleTextBold() :                       Print("\nOptions\n")
+         ResetConsole() :                          Print("   -t     | --translation              Output a target translation file instead of a binary.\n" + 
+                                                         "   -c     | --commented                Output a target translation file that includes comments from the EpicBasic source file.\n" + 
+                                                         "   -cd    | --configure-defaults       Prompt to configure the value of configurable constants.\n" + 
+                                                         "   -ih    | --inline-header            Inline the library headers to make the translation portable.\n" + 
+                                                         "   -coff  | --colors-off               Force disable colorized console output. (auto select mode by default)\n" + 
+                                                         "   -con   | --colors-on                Force enable colorized console output.\n" + 
+                                                         "   -O#    |                            Set the optimizer level to pass to the C++ compiler\n" + 
+                                                         "   -s     | --syntax                   Syntax check the MainFile only.\n" + 
+                                                         "   -wt    | --warning-threshhold #     Set the maximum number of warnings to report in detail. (Default is 0)\n" + 
+                                                         "   -d     | --debugger                 Compile with debugger.\n" + 
+                                                         "   -o     | --output \"/path/file\"      Outputs binary to path.\n" + 
+                                                         "   -v     | --version                  Output the compiler's version string\n")
+         ConsoleTextBold() :                       Print("\nEnvironment Variables\n")
+         ResetConsole() :                          Print("   EPICBASIC_HOME_PATH   | Home path of the EpicBasic directory. (Not implemented)\n" + 
+                                                         "   EPICBASIC_HEADER_PATH | Path to module headers.\n" + 
+                                                         "   EPICBASIC_MODULE_PATH | Path to module resources.\n")
+         
+         End #Exit_Success
+         
+      ElseIf Right(ProgramParameter(p), 1) = "-"
+         
+         PrintN("Unknown option: " + ProgramParameter(p))
+         Print("\"ebcompiler -h\" help.\n")
+         
+         End #Exit_Failure
+         
+      Else
+         
+         If Left(ProgramParameter(p), 1) = "-" Or Len(MainPath) > 0
+            
+            PrintN("Error: command line switch not understood: "+ProgramParameter(p))
+            End #Exit_Failure
+            
+         EndIf
+         
+         MainPath = ProgramParameter(p)
+         
+      EndIf
+      
+   Next
+
+
+   If Len(MainPath) = 0
+      
+      PrintN(CompilerVersion)
+      Print("An input file must be specified.\n")
+      Print("\nHelp:\nebcompiler -h\n")
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   If DebuggerFlag = #True
+      
+      ConsoleTextBold() :                       PrintN("\nAttaching the debugger to the output")
+      
+      SetMapElement(TIncludeFileMap, "string")
+      SetMapElement(TIncludeFileMap, "iostream")
+      SetMapElement(TIncludeFileMap, "cstdlib")
+      SetMapElement(TIncludeFileMap, "csignal")
+      SetMapElement(TIncludeFileMap, "vector")
+      
+      SetMapElement(TInitializeMap, "_ebD_CallDebugger(_ebD_Debugger_Flag_Initialize, \"\" ) ;")
+      
+      SetMapElement(ImportMap, "Debugger")
+      
+   EndIf
+   
+EndProcedure

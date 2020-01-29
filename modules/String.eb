@@ -1,0 +1,34 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <String>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <string>
+TIncludeFile <sstream>
+TIncludeFile <iomanip>
+TIncludeFile <algorithm>
+TIncludeFile <ctime>
+
+TLink <-std=c++11>
+
+ExternalProcedure.s ReplaceString(String.s, Find.s, Replace.s)
+ExternalProcedure.s RepeatString(String.s, Times.i)
+ExternalProcedure.s Space(Number.q)
+ExternalProcedure.s Right(String.s, Trim.i)
+ExternalProcedure.s Left(String.s, Trim.i)
+ExternalProcedure.s Mid(String.s, Start.i, Finish.i)
+ExternalProcedure.s LCase(String.s)
+ExternalProcedure.s UCase(String.s)
+ExternalProcedure.i Len(String.s)
+ExternalProcedure.i Size(String.s)
+ExternalProcedure.s Chr(Character.c)
+ExternalProcedure.s Str(Number.i)
+ExternalProcedure.s StrF(Number.f, Precision.i)
+ExternalProcedure.s Hex(Number.i)
+ExternalProcedure.i Val(String.s)
+ExternalProcedure.d ValF(String.s)
+ExternalProcedure.s StringField(String.s, Field.i, Delimiter.s)
+ExternalProcedure.l CountString(String.s, Delimiter.s)
+ExternalProcedure.s StrTime(Format.s, Time.p)
+ExternalProcedure.b IsANumber(String.s)

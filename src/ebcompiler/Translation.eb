@@ -1,0 +1,229 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Import                                 
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckTInclude()
+   
+   NextToken()
+   
+   If TokenType() != #TypeImport
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected library to include.", "Syntax: TIncludeFile <File>'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   IncludePath.s = Mid(Token(), 1, Len(Token())-2)
+   
+   SetMapElement(TIncludeFileMap, IncludePath)
+   
+   GarbageCheck()
+   
+EndProcedure
+
+Procedure CheckTLink()
+   
+   NextToken()
+   
+   If TokenType() != #TypeImport
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected library to link.", "Syntax: TLink <-lLibraryName>'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   LinkPath.s = Mid(Token(), 1, Len(Token())-2)
+   
+   SetMapElement(TLinkMap, LinkPath)
+   
+   GarbageCheck()
+   
+EndProcedure
+
+Procedure CheckTInitialize()
+   
+   NextToken()
+   
+   If TokenType() != #TypeImport
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected initialization statement.", "Syntax: TInitialize <InitStatement>'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   InitializeString.s = Mid(Token(), 1, Len(Token())-2)
+   
+   SetMapElement(TInitializeMap, InitializeString)
+   
+   GarbageCheck()
+      
+EndProcedure
+
+Procedure CheckTConstant()
+   
+   NextToken()
+   
+   If TokenType() != #TypeType
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected constant type.", "Syntax: TConstant.type #ConstantName = <Macro>", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   CurrentType.b = CheckType()
+   
+   NextToken()
+   
+   If TokenType() != #TypeConstant
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected constant name.", "Syntax: TConstant.type #ConstantName = <Macro>", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   ConstantName.s = Token()
+   
+   NextToken()
+
+   If TokenType() != #TypeOperatorEqual
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Constant must be assigned a value.", "Syntax: TConstant.type #ConstantName = <Macro>", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   NextToken()
+   
+   If TokenType() != #TypeImport
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Constant must be assigned a value.", "Syntax: TConstant.type #ConstantName = <Macro>", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   CreateConstant(ConstantName, CurrentType, Mid(Token(), 1, Len(Token())-2), CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+   
+   GarbageCheck()
+      
+EndProcedure
+
+Procedure CheckExternalProcedure()
+   
+   ResetProcedure.s = CurrentMapKey(ProcedureMap)
+   
+   NextToken()
+   
+   If TokenType() = #TypeType
+      
+      ReturnType.b = CheckType()
+      NextToken()
+      
+   Else
+      
+      ReturnType = #VariableTypeNull
+      
+   EndIf
+   
+   If TokenType() != #TypeProcedure
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected procedure name. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetElementIndex(ActiveLines, TokenLine())
+   
+   If CommentPassthrough = #True
+      
+      AddProcedureEmit("")
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("// ; ExternalProcedure Declaration ")
+      AddProcedureEmit("// ;    " + PeekS(PeekP(CurrentListElement(ActiveLines))))
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("")
+      
+   EndIf
+   
+   OldProcedure.s = CurrentMapKey(ProcedureMap)
+   NewProcedure.s = Token()
+   
+   CreateProcedure(NewProcedure, ReturnType, CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+   
+   NextToken()
+   
+   NextToken()
+   
+   If TokenType() != #TypeCloseParameter
+      
+      PreviousElement(ActiveTokenTable)
+      
+      While TokenType() != #TypeCloseParameter
+         
+         NextToken()
+         
+         If TokenType() != #TypeVariable And TokenType() != #TypeVariableDeclare
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            ErrorSuggest("Syntax error. Expected parameter name. ", "Syntax: ExternalProcedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         ParameterName.s = Token()
+         
+         NextToken()
+         
+         If TokenType() != #TypeType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            ErrorSuggest("Syntax error. Expected parameter type. ", "Syntax: ExternalProcedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         ParameterType.b = CheckType()
+         
+         AddProcedureParameter(ParameterName, ParameterType)
+         
+         NextToken()
+         
+         If TokenType() != #TypeDelimiter And TokenType() != #TypeCloseParameter
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            ErrorSuggest("Syntax error. Expected delimiter {,} or closing parenthesis {)}. ", "Syntax: ExternalProcedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+      Wend
+      
+   EndIf
+   
+   GarbageCheck()
+   
+   SetMapElement(ProcedureMap, ResetProcedure)
+   ActiveProcedure = CurrentMapElement(ProcedureMap)
+   
+EndProcedure

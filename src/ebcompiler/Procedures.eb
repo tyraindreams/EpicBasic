@@ -1,0 +1,573 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Procedures                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CallProcedure()
+   
+   ProcedureCall.s = Token()
+   p.l = 0
+   ParameterCount.l = ProcedureParameterCount(ProcedureCall)
+   
+   WorkingEmit + "_ebP_" + ProcedureCall + "( "
+   
+   NextToken()
+   
+   If ParameterCount = 0
+      
+      NextToken()
+      
+      If TokenType() = #TypeCloseParameter
+         
+         WorkingEmit + ") "
+            
+         ProcedureReturn
+         
+      ElseIf TokenType() != #TypeCloseParameter
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Incorrect number of parameters.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+   EndIf
+   
+   While 1
+      
+      p + 1
+      
+      SeekToken()
+      
+      CurrentType.b = ProcedureParameterType(ProcedureCall, p)
+      
+      If CurrentType = #VariableTypeString
+         
+         CheckConcatenate()
+         
+      Else
+         
+         CheckExpression(CurrentType)
+         
+      EndIf
+      
+      If TokenType() = #TypeDelimiter And p >= ParameterCount
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Incorrect number of parameters.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      ElseIf TokenType() = #TypeDelimiter And p < ParameterCount
+         
+         WorkingEmit + ", "
+         
+      ElseIf TokenType() = #TypeCloseParameter And p != ParameterCount
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Incorrect number of parameters.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      ElseIf TokenType() = #TypeCloseParameter And p = ParameterCount
+         
+         WorkingEmit + ") "
+         
+         ProcedureReturn
+         
+      ElseIf TokenType() = #TypeEndLine
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Unexpected end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+
+         End #Exit_Failure
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expected delimiter.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+   Wend
+      
+EndProcedure
+
+
+Procedure CheckProcedure()
+   
+   NextToken()
+   
+   If TokenType() = #TypeType
+      
+      ReturnType.b = CheckType()
+      NextToken()
+      
+   Else
+      
+      ReturnType = #VariableTypeNull
+      
+   EndIf
+   
+   If TokenType() != #TypeProcedure
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected procedure name. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetElementIndex(ActiveLines, TokenLine())
+   
+   If CommentPassthrough = #True
+      
+      AddProcedureEmit("")
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("// ; Procedure Definition ")
+      AddProcedureEmit("// ;    " + PeekS(PeekP(CurrentListElement(ActiveLines))))
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("")
+      
+   EndIf
+   
+   OldProcedure.s = CurrentMapKey(ProcedureMap)
+   NewProcedure.s = Token()
+   
+   If ProcedureDeclared(NewProcedure)
+      
+      If ProcedureReturnType(NewProcedure) != ReturnType
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Procedure definition does not match declared procedure's return type.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      p.l = 0
+      ParameterCount.l = ProcedureParameterCount(NewProcedure)
+      
+      NextToken()
+      
+      If ParameterCount = 0
+         
+         NextToken()
+         
+         If TokenType() = #TypeCloseParameter
+            
+            
+         ElseIf TokenType() != #TypeCloseParameter
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Procedure definition does not match declared procedure's parameter count.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+      Else
+         
+         While 1
+            
+            p + 1
+            
+            NextToken()
+            NextToken()
+            
+            If ProcedureParameterType(NewProcedure, p) != CheckType()
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Procedure definition does not match declared procedure's parameter type.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+            NextToken()
+            
+            TokenType.b = TokenType()
+            
+            If TokenType = #TypeDelimiter And p >= ParameterCount
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Procedure definition does not match declared procedure's parameter count.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            ElseIf TokenType = #TypeDelimiter And p < ParameterCount
+               
+               
+            ElseIf TokenType = #TypeCloseParameter And p != ParameterCount
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Procedure definition does not match declared procedure's parameter count.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            ElseIf TokenType = #TypeCloseParameter And p = ParameterCount
+               
+               Break
+               
+            ElseIf TokenType = #TypeEndLine
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Unexpected end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+
+               End #Exit_Failure
+               
+            Else
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Syntax error. Expected delimiter.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+         Wend
+         
+      EndIf
+      
+      SetMapElement(ProcedureMap, NewProcedure)
+      ActiveProcedure = CurrentMapElement(ProcedureMap)
+      
+      PokeB(ActiveProcedure+#OffsetOf_Procedures_Declared, #False)
+      
+   Else
+      
+      CreateProcedure(NewProcedure, ReturnType, CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+      
+      NextToken()
+      
+      NextToken()
+      
+      If TokenType() != #TypeCloseParameter
+         
+         PreviousElement(ActiveTokenTable)
+         
+         While TokenType() != #TypeCloseParameter
+            
+            NextToken()
+            
+            If TokenType() != #TypeVariable And TokenType() != #TypeVariableDeclare
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               ErrorSuggest("Syntax error. Expected parameter name. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+            ParameterName.s = Token()
+            
+            NextToken()
+            
+            If TokenType() != #TypeType
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               ErrorSuggest("Syntax error. Expected parameter type. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+            ParameterType.b = CheckType()
+            
+            AddProcedureParameter(ParameterName, ParameterType)
+            
+            NextToken()
+            
+            If TokenType() != #TypeDelimiter And TokenType() != #TypeCloseParameter
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               ErrorSuggest("Syntax error. Expected delimiter {,} or closing parenthesis {)}. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+         Wend
+         
+      EndIf
+      
+   EndIf
+   
+   GarbageCheck()
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + NewProcedure + "():" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_CallTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   CompileCPP11()
+   
+   CheckBlockLevel()
+   
+   QueueProcedure(NewProcedure)
+   
+   If TokenType() != #TypeKeywordEndProcedure
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Procedure declarations must end in the same file they are declared in. ", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   GarbageCheck()
+   
+   If DebuggerFlag = #True
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_CallPop, \"\") ;")
+      
+   EndIf
+   
+   SetMapElement(ProcedureMap, OldProcedure)
+   ActiveProcedure = CurrentMapElement(ProcedureMap)
+   
+EndProcedure
+
+
+Procedure CheckDeclare()
+   
+   ResetProcedure.s = CurrentMapKey(ProcedureMap)
+   
+   NextToken()
+   
+   If TokenType() = #TypeType
+      
+      ReturnType.b = CheckType()
+      NextToken()
+      
+   Else
+      
+
+      ReturnType = #VariableTypeNull
+      
+   EndIf
+   
+   If TokenType() != #TypeProcedure
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected procedure name. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetElementIndex(ActiveLines, TokenLine())
+   
+   If CommentPassthrough = #True
+      
+      AddProcedureEmit("")
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("// ; Procedure Declaration ")
+      AddProcedureEmit("// ;    " + PeekS(PeekP(CurrentListElement(ActiveLines))))
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("")
+      
+   EndIf
+   
+   OldProcedure.s = CurrentMapKey(ProcedureMap)
+   NewProcedure.s = Token()
+   
+   CreateProcedure(NewProcedure, ReturnType, CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+   
+   NextToken()
+   
+   NextToken()
+   
+   If TokenType() != #TypeCloseParameter
+      
+      PreviousElement(ActiveTokenTable)
+      
+      While TokenType() != #TypeCloseParameter
+         
+         NextToken()
+         
+         If TokenType() != #TypeVariable And TokenType() != #TypeVariableDeclare
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            ErrorSuggest("Syntax error. Expected parameter name. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         ParameterName.s = Token()
+         
+         NextToken()
+         
+         If TokenType() != #TypeType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            ErrorSuggest("Syntax error. Expected parameter type. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         ParameterType.b = CheckType()
+         
+         AddProcedureParameter(ParameterName, ParameterType)
+         
+         NextToken()
+         
+         If TokenType() != #TypeDelimiter And TokenType() != #TypeCloseParameter
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            ErrorSuggest("Syntax error. Expected delimiter {,} or closing parenthesis {)}. ", "Syntax: Procedure{.type} ProcedureName(Parameter1{.type}, Parameter2{.type})", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+      Wend
+      
+   EndIf
+   
+   GarbageCheck()
+   
+   PokeB(ActiveProcedure+#OffsetOf_Procedures_Declared, #True)
+   
+   SetMapElement(ProcedureMap, ResetProcedure)
+   ActiveProcedure = CurrentMapElement(ProcedureMap)
+   
+EndProcedure
+
+
+Procedure CheckProcedureReturn()
+   
+   WorkingEmit = "return "
+   
+   If DebuggerFlag = #True
+      
+      WorkingEmit = "_ebD_CallDebugger(_ebD_Debugger_Flag_CallPop, \"\") ; " + WorkingEmit
+      
+   EndIf
+   
+   CurrentType.b = ProcedureReturnType(CurrentMapKey(ProcedureMap))
+   
+   If CurrentType = #VariableTypeNull
+   
+      GarbageCheck()
+      
+   ElseIf CurrentType = #VariableTypeString
+      
+      NextToken()
+      
+      CheckConcatenate()
+      
+      If TokenType() = #TypeComment
+      
+         If Len(WorkingEmit) > 0
+            
+            WorkingEmit + "; // " + Token()
+            
+         EndIf
+         
+         NextElement(ActiveTokenTable)
+         
+      ElseIf TokenType() = #TypeEndLine
+         
+         If Len(WorkingEmit) > 0
+         
+            WorkingEmit + ";"
+         
+         EndIf
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Garbage at end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+   Else
+      
+      NextToken()
+      
+      CheckExpression(CurrentType)
+      
+      If TokenType() = #TypeComment
+      
+         If Len(WorkingEmit) > 0
+            
+            WorkingEmit + "; // " + Token()
+            
+         EndIf
+         
+         NextElement(ActiveTokenTable)
+         
+      ElseIf TokenType() = #TypeEndLine
+         
+         If Len(WorkingEmit) > 0
+         
+            WorkingEmit + ";"
+         
+         EndIf
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Garbage at end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+   EndIf
+   
+EndProcedure
+
+
+Procedure CheckEnd()
+   
+   WorkingEmit = "exit( "
+   
+   NextElement(ActiveTokenTable)
+   
+   TokenType.b = TokenType()
+   
+   If TokenType = #TypeComment
+      
+      If Len(WorkingEmit) > 0
+         
+         WorkingEmit + "0 ) ; // " + Token()
+         
+      EndIf
+      
+      NextElement(ActiveTokenTable)
+      
+   ElseIf TokenType = #TypeEndLine
+      
+      If Len(WorkingEmit) > 0
+      
+         WorkingEmit + "0 ) ;"
+      
+      EndIf
+      
+   Else
+      
+      CheckExpression(#VariableTypeInteger)
+      
+      WorkingEmit + ") "
+      
+      PreviousElement(ActiveTokenTable)
+      
+      GarbageCheck()
+      
+   EndIf
+   
+EndProcedure

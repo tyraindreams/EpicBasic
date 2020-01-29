@@ -1,0 +1,30 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <Process>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <iostream>
+TIncludeFile <unistd.h>
+TIncludeFile <sys/wait.h>
+
+TInitialize <_ebI_argv = argv ;>
+TInitialize <_ebI_argc = argc ;>
+
+TConstant.b #Exit_Failure = <EXIT_FAILURE>
+TConstant.b #Exit_Success = <EXIT_SUCCESS>
+TConstant.b #True         = <true>
+TConstant.b #False        = <false>
+
+ExternalProcedure.s GetEnvironmentVariable(Variable.s)
+ExternalProcedure.i SetEnvironmentVariable(Variable.s, Value.s)
+ExternalProcedure.i RunProgram(Program.s)
+ExternalProcedure.i ProgramOutput(Program.p)
+ExternalProcedure.i ProgramInput(Program.p)
+ExternalProcedure.p OpenProgram(Program.s)
+ExternalProcedure.p ReadProgram(Program.s)
+ExternalProcedure.i CloseProgram(Program.p)
+ExternalProcedure.i ProgramRunning(Program.p)
+ExternalProcedure.i CountProgramParameters()
+ExternalProcedure.s ProgramParameter(Index.i)
+ExternalProcedure.l Fork()

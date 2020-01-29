@@ -1,0 +1,155 @@
+; XIncludeFile "./TokenTable.eb"
+Declare   SetFile(Path.s)
+Declare.s Token()
+Declare.b TokenType()
+Declare.l TokenLine()
+Declare.l TokenPosition()
+Declare.b SeekToken()
+Declare   NextToken()
+
+; XIncludeFile "./Expressions.eb"
+Declare   CheckExpression(ExpressionType.b)
+Declare   CompareExpression()
+
+; XIncludeFile "./Procedures.eb"
+Declare   CallProcedure()
+Declare   CheckProcedure()
+Declare   CheckDeclare()
+Declare   CheckProcedureReturn()
+Declare   CheckEnd()
+
+; XIncludeFile "./Declare.eb"
+
+; XIncludeFile "./Constants.eb"
+Declare   BlockConstant()
+Declare   BlockEnumeration()
+Declare   ConfigureConstant()
+Declare.b ConstantType(ConstantName.s)
+Declare.s ConstantMacro(ConstantName.s)
+
+; XIncludeFile "./Include.eb"
+Declare   CheckXInclude()
+Declare   CheckInclude()
+
+; XIncludeFile "./Translation.eb"
+Declare   CheckTInclude()
+Declare   CheckTLink()
+Declare   CheckTInitialize()
+Declare   CheckTConstant()
+Declare   CheckExternalProcedure()
+
+; XIncludeFile "./EmitCPP11.eb"
+Declare   EmitCPP11(OutPutPath.s)
+
+; XIncludeFile "./Tokenize.eb"
+Declare   TokenizeSourceFile(Path.s)
+
+; XIncludeFile "./Conditionals.eb"
+Declare   CheckIf()
+Declare   CheckElse()
+Declare   CheckEndIf()
+Declare   CheckSelect()
+Declare   CheckCase()
+Declare   CheckDefault()
+Declare   CheckEndSelect()
+
+; XIncludeFile "./MapsLists.eb"
+Declare.b List(List.p, Commands.s)
+Declare.p NewList(Size.l)
+Declare.p CurrentListElement(List.p)
+Declare   AddListElement(List.p)
+Declare   TruncateListElement(List.p)
+Declare.p NewMap(Size.l)
+Declare   SetMapElement(Map.p, Key.s)
+Declare.i FindMapKey(Map.p, Key.s)
+Declare.p CurrentMapElement(Map.p)
+Declare.s CurrentMapKey(Map.p)
+Declare.b NextElement(List.p)
+Declare.b PreviousElement(List.p)
+Declare   SetElementIndex(List.p, Index.l)
+Declare   ResetElement(List.p)
+Declare.l ElementCount(List.p)
+Declare.l ElementIndex(List.p)
+
+; XIncludeFile "./TargetCPP11.eb"
+Declare   CompileMainPath()
+Declare   NotImplemented()
+Declare   CompileCPP11()
+
+; XIncludeFile "./GarbageCheck.eb"
+Declare   GarbageCheck()
+
+; XIncludeFile "./Main.eb"
+
+; XIncludeFile "./Import.eb"
+Declare   CheckImport()
+
+; XIncludeFile "./Error.eb"
+Declare   Error(Error.s, Path.s, LineString.s, Line.i, Position.i)
+Declare   Warning(Warning.s, Path.s, LineString.s, Line.i, Position.i)
+Declare   ErrorNote(Note.s, Path.s, LineString.s, Line.i, Position.i)
+Declare   Note(Note.s, Path.s, LineString.s, Line.i, Position.i)
+Declare   ErrorSuggest(Error.s, Suggest.s, Path.s, LineString.s, Line.i, Position.i)
+Declare   WarningSuggest(Warning.s, Suggest.s, Path.s, LineString.s, Line.i, Position.i)
+
+; XIncludeFile "./GlobalData.eb"
+Declare   AddGlobalVariable(Name.s, Type.b)
+Declare   CreateConstant(ConstantName.s, Type.b, Macro.s, Path.s, Line.l, ConstantType.b)
+
+; XIncludeFile "./CheckType.eb"
+Declare.b CheckType()
+
+; XIncludeFile "./ProgramParameters.eb"
+Declare   CheckProgramParameters()
+
+; XIncludeFile "./ProcedureData.eb"
+Declare   QueueProcedure(ProcedureName.s)
+Declare.b ProcedureDeclared(ProcedureName.s)
+Declare.b ProcedureReturnType(ProcedureName.s)
+Declare.l ProcedureParameterCount(ProcedureName.s)
+Declare.b ProcedureParameterType(ProcedureName.s, Index.l)
+Declare   CreateProcedure(ProcedureName.s, ReturnType.b, Path.s, Line.l, ProcedureType.b)
+Declare   AddProcedureParameter(Name.s, Type.b)
+Declare   AddProcedureVariable(Name.s, Type.b)
+Declare.b VariableType(Name.s)
+Declare   AddProcedureEmit(Line.s)
+Declare   AddDeBlockedProcedureEmit(Line.s)
+Declare   IncreaseBlockLevel(BlockType.b)
+Declare   DecreaseBlockLevel()
+Declare.b BlockLevelType()
+Declare.b BlockLevelSpecialFlag()
+Declare   SetBlockLevelSpecialFlag()
+Declare   SetBlockLevelExpressionType(Type.b)
+Declare.b BlockLevelExpressionType()
+Declare   SetBlockLevelExpression(Expression.s)
+Declare.s BlockLevelExpression()
+Declare   CheckBlockLevel()
+
+; XIncludeFile "./CPP11.eb"
+Declare.s CPP11Type(Type.b)
+
+; XIncludeFile "./Concatenate.eb"
+Declare   CheckConcatenate()
+Declare   CompareConcatenate()
+
+; XIncludeFile "./EBTokens.eb"
+
+; XIncludeFile "./Loops.eb"
+Declare   CheckFor()
+Declare   CheckNext()
+Declare   CheckWhile()
+Declare   CheckWend()
+
+; XIncludeFile "./Comments.eb"
+Declare   BlockComment()
+
+; XIncludeFile "./Global.eb"
+Declare   InitializeGlobals()
+
+; XIncludeFile "./Structures.eb"
+Declare   CheckStructure()
+Declare   ResolveStructure()
+
+; XIncludeFile "./Literal.eb"
+Declare.b CheckRange(Value.q)
+

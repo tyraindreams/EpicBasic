@@ -1,0 +1,36 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Comments                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure BlockComment()
+   
+   AddProcedureEmit("")
+   
+   AddProcedureEmit("// "+Token())
+   
+   NextElement(ActiveTokenTable)
+   
+   While NextElement(ActiveTokenTable)
+      
+      
+      If TokenType() = #TypeComment
+         
+         AddProcedureEmit("// "+Token())
+         NextElement(ActiveTokenTable)
+         
+      Else
+         
+         PreviousElement(ActiveTokenTable)
+         AddProcedureEmit("")
+         Break
+         
+      EndIf
+      
+   Wend
+   
+   AddProcedureEmit("")
+      
+EndProcedure

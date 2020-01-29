@@ -1,0 +1,509 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Expressions                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckExpression(ExpressionType.b)
+   
+   ExpressionScope.l = 0
+   
+   While 1
+      
+      While TokenType() = #TypeOpenParameter
+         
+         ExpressionScope + 1
+         
+         WorkingEmit + "( "
+         
+         NextToken()
+         
+      Wend
+      
+      TokenType.b = TokenType()
+      
+      If TokenType = #TypeInteger
+         
+         If CheckRange(Val(Token())) > ExpressionType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning from type with greater range, value may overflow.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         EndIf
+         
+         WorkingEmit + Token() + " "
+         
+      ElseIf TokenType = #TypeFloat
+         
+         If ExpressionType <= #VariableTypeQuad
+            
+            WorkingEmit + StringField(Token(), 1, ".") + " "
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning float to integer value, float value will be truncated from " + Token() + " to " + StringField(Token(), 1, ".") + ".", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         Else
+         
+         WorkingEmit + Token() + " "
+         
+         EndIf
+         
+      ElseIf TokenType = #TypeHexadecimal
+         
+         If CheckRange(Val(Right(Token(), Len(Token())-1))) > ExpressionType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning from type with greater range, value may overflow.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         EndIf
+         
+         WorkingEmit + Str(Val(Right(Token(), Len(Token())-1))) + " "
+         
+      ElseIf TokenType = #TypeOperatorNegate
+         
+         NextToken()
+         
+         WorkingEmit + "-" + Token() + " "
+         
+      ElseIf TokenType = #TypeProcedure
+         
+         CurrentType.b = ProcedureReturnType(Token())
+         
+         If CurrentType = #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Numeric expressions can only contain integer and float type literals, variables, and procedure return values.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         ElseIf CurrentType >= #VariableTypeFloat And ExpressionType <= #VariableTypeQuad
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning float to integer value, float value will be truncated.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         ElseIf CurrentType > ExpressionType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning from type with greater range, value may overflow.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         EndIf
+         
+         CallProcedure()
+         
+      ElseIf TokenType = #TypeConstant
+         
+         CurrentType = ConstantType(Token())
+         
+         If CurrentType = #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Numeric expressions can only contain integer and float type literals, variables, and procedure return values.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         ElseIf CurrentType >= #VariableTypeFloat And ExpressionType <= #VariableTypeQuad
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning float to integer value, float value will be truncated.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         ElseIf CurrentType > ExpressionType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning from type with greater range, value may overflow.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         EndIf
+         
+         WorkingEmit + ConstantMacro(Token()) + " "
+         
+      ElseIf TokenType = #TypeProcedureReference
+         
+         ProcedureName.s = Right(Token(), Len(Token()) - 1)
+         
+         If FindMapKey(ProcedureMap, ProcedureName) = #False
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error(ProcedureName + "() is not a declared procedure.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         NextToken()
+         NextToken()
+         
+         If TokenType() != #TypeCloseParameter
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Procedure reference cannot take any parameters.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + "reinterpret_cast<char *>( &_ebP_" + ProcedureName + " ) "
+         
+      ElseIf TokenType = #TypeVariable Or TokenType = #TypeVariableDeclare Or TokenType = #TypeVariableReference Or TokenType = #TypeDeclareReference
+         
+         If TokenType = #TypeVariableReference Or TokenType = #TypeDeclareReference
+            
+            VariableName.s = Right(Token(), Len(Token()) - 1)
+            
+            Reference.b = #True
+            
+         Else
+            
+            VariableName = Token()
+            
+            Reference = #False
+            
+         EndIf
+         
+         If TokenType = #TypeVariableDeclare Or TokenType = #TypeDeclareReference
+            
+            NextToken()
+            
+            CurrentType = CheckType()
+            
+            AddProcedureVariable(VariableName, CurrentType)
+            
+         ElseIf TokenType = #TypeVariable
+            
+            If VariableType(VariableName) = #VariableTypeNull
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Warning("Variable type was not explicitly given. Defaulting to Integer.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               AddProcedureVariable(VariableName, #VariableTypeInteger)
+               
+            Else
+               
+               CurrentType = VariableType(VariableName)
+               
+            EndIf
+            
+         EndIf
+         
+         If CurrentType = #VariableTypeString And Reference = #False
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Can't mix strings with integers or floats.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         ElseIf CurrentType >= #VariableTypeFloat And ExpressionType <= #VariableTypeQuad
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning float to integer value, float value will be truncated.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         ElseIf CurrentType > ExpressionType
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Type mismatch. Assigning from type with greater range, value may overflow.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+         EndIf
+         
+         If Reference = #True
+            
+            WorkingEmit + "reinterpret_cast<char*>( &_ebV_" + VariableName + " ) "
+            
+         Else
+            
+            WorkingEmit + "_ebV_" + VariableName + " "
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeString
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Can't mix strings with integers or floats.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      NextElement(ActiveTokenTable)
+      
+      While TokenType() = #TypeCloseParameter
+         
+         ExpressionScope - 1
+         
+         If ExpressionScope < 0
+            
+            ProcedureReturn
+            
+         EndIf
+         
+         WorkingEmit + ") "
+         
+         NextElement(ActiveTokenTable)
+         
+      Wend
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeEndLine Or TokenType = #TypeDelimiter Or TokenType = #TypeKeywordTo Or TokenType = #TypeKeywordStep
+         
+         ProcedureReturn
+         
+      EndIf
+      
+      If TokenType >= #TypeOperatorAdd And TokenType <= #TypeOperatorDivide
+         
+         WorkingEmit + Token() + " "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseNot
+         
+         WorkingEmit + "~ "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseAnd
+         
+         WorkingEmit + "& "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseOr
+         
+         WorkingEmit + "| "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseXOr
+         
+         WorkingEmit + "^ "
+         
+      ElseIf TokenType = #TypeOperatorEqual
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expression is not assignable.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expected operator.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      SeekToken()
+      
+   Wend
+   
+EndProcedure
+
+
+Procedure CompareExpression()
+   
+   Compares.b = #False
+   ExpressionScope.l = 0
+   
+   While 1
+      
+      While TokenType() = #TypeOpenParameter
+         
+         ExpressionScope + 1
+         
+         WorkingEmit + "( "
+         
+         NextToken()
+         
+      Wend
+      
+      TokenType.b = TokenType()
+      
+      If TokenType = #TypeInteger Or TokenType = #TypeFloat
+         
+         WorkingEmit + Token() + " "
+         
+      ElseIf TokenType = #TypeHexadecimal
+         
+         WorkingEmit + Str(Val(Right(Token(), Len(Token())-1))) + " "
+         
+      ElseIf TokenType = #TypeOperatorNegate
+         
+         NextToken()
+         
+         WorkingEmit + "-" + Token() + " "
+         
+      ElseIf TokenType = #TypeProcedure
+         
+         If ProcedureReturnType(Token()) = #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Numeric expressions can only contain integer and float type literals, variables, and procedure return values.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         CallProcedure()
+         
+      ElseIf TokenType = #TypeConstant
+         
+         If ConstantType(Token()) = #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Numeric expressions can only contain integer and float type literals, variables, and procedure return values.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + ConstantMacro(Token()) + " "
+         
+      ElseIf TokenType = #TypeVariable Or TokenType() = #TypeVariableDeclare
+         
+         If TokenType = #TypeVariableDeclare
+            
+            VariableName.s = Token()
+            
+            NextToken()
+            
+            CurrentType.b = CheckType()
+            
+            AddProcedureVariable(VariableName, CurrentType)
+            
+         ElseIf TokenType = #TypeVariable
+            
+            VariableName = Token()
+            
+            If VariableType(VariableName) = #VariableTypeNull
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Warning("Variable type was not explicitly given. Defaulting to Integer.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               AddProcedureVariable(VariableName, #VariableTypeInteger)
+            Else
+               
+               CurrentType = VariableType(VariableName)
+               
+            EndIf
+            
+         EndIf
+         
+         If CurrentType = #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Can't mix strings with integers or floats.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + "_ebV_" + VariableName + " "
+         
+      ElseIf TokenType = #TypeString
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Can't mix strings with integers or floats.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      NextElement(ActiveTokenTable)
+      
+      While TokenType() = #TypeCloseParameter
+         
+         ExpressionScope - 1
+         
+         If ExpressionScope < 0
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Expected '(' before ')'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + ") "
+         
+         NextElement(ActiveTokenTable)
+         
+      Wend
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeEndLine Or TokenType = #TypeKeywordTo Or TokenType = #TypeKeywordStep Or TokenType = #TypeKeywordAnd Or TokenType = #TypeKeywordOr
+         
+         ProcedureReturn
+         
+      EndIf
+      
+      If TokenType >= #TypeOperatorAdd And TokenType <= #TypeOperatorDivide
+         
+         WorkingEmit + Token() + " "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseNot
+         
+         WorkingEmit + "~ "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseAnd
+         
+         WorkingEmit + "& "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseOr
+         
+         WorkingEmit + "| "
+         
+      ElseIf TokenType = #TypeOperatorBitwiseXOr
+         
+         WorkingEmit + "^ "
+         
+      ElseIf TokenType = #TypeOperatorModulo
+         
+         WorkingEmit + "% "
+         
+      ElseIf TokenType >= #TypeOperatorEqual And TokenType <= #TypeOperatorLess
+         
+         If Compares = #True
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Expression already compares values.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         Compares = #True
+         
+         If TokenType = #TypeOperatorEqual
+            
+            WorkingEmit + "== "
+            
+         ElseIf TokenType = #TypeOperatorNotEqual
+            
+            WorkingEmit + "!= "
+            
+         ElseIf TokenType = #TypeOperatorGreaterEqual
+            
+            WorkingEmit + ">= "
+            
+         ElseIf TokenType = #TypeOperatorLessEqual
+            
+            WorkingEmit + "<= "
+            
+         ElseIf TokenType = #TypeOperatorGreater
+            
+            WorkingEmit + "> "
+            
+         ElseIf TokenType = #TypeOperatorLess
+            
+            WorkingEmit + "< "
+            
+         EndIf
+         
+      Else
+         
+         PrintN(Token()) : PrintN(Str(TokenType()))
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expected operator or keyword.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      SeekToken()
+      
+   Wend
+   
+EndProcedure

@@ -1,0 +1,58 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic CPP11                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure.s CPP11Type(Type.b)
+
+   If Type = #VariableTypeString
+      
+      ProcedureReturn "std::string "
+      
+   ElseIf Type = #VariableTypeFloat
+      
+      ProcedureReturn "float "
+      
+   ElseIf Type = #VariableTypeInteger
+      
+      ProcedureReturn "signed int "
+      
+   ElseIf Type = #VariableTypeCharacter
+      
+      ProcedureReturn "unsigned char "
+      
+   ElseIf Type = #VariableTypeByte
+      
+      ProcedureReturn "signed char "
+      
+   ElseIf Type = #VariableTypeLong
+      
+      ProcedureReturn "signed long "
+      
+   ElseIf Type = #VariableTypePointer
+      
+      ProcedureReturn "char * "
+      
+   ElseIf Type = #VariableTypeNull
+         
+      ProcedureReturn "void "
+      
+   ElseIf Type = #VariableTypeWord
+      
+      ProcedureReturn "signed short "
+      
+   ElseIf Type = #VariableTypeQuad
+      
+      ProcedureReturn "signed long long "
+      
+   ElseIf Type = #VariableTypeDouble
+      
+      ProcedureReturn "double "
+      
+   EndIf
+   
+   ProcedureReturn "___EBCOMPILERBUG___"
+   
+EndProcedure

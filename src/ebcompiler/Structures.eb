@@ -1,0 +1,97 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Structure                              
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckStructure()
+   
+   NextToken()
+   
+   If TokenType() != #TypeVariable
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Expected structure name.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   StuctureName.s = Token()
+   
+   If FindMapKey(StructureMap, StuctureName)
+      
+      SetMapElement(StructureMap, StuctureName)
+         
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(StuctureName + " is already a declared structure.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      SetMapElement(Files, PeekS(PeekP(CurrentMapElement(StructureMap)+#OffsetOf_Structures_DeclaredIn)))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#PointerSize), PeekL(CurrentMapElement(StructureMap)+#OffsetOf_Structures_DeclaredLine))
+      
+      ErrorNote(StuctureName + " was declared here.", PeekS(PeekP(CurrentMapElement(StructureMap))), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#PointerSize)))), PeekL(CurrentMapElement(StructureMap)+#OffsetOf_Structures_DeclaredLine), 1)
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   CreateConstant("#SizeOf_" + StuctureName, #VariableTypeLong, "sizeof( struct _ebS_" + StuctureName + ") ", CurrentMapKey(Files), TokenLine(), #IdentifierTypeInternal)
+   
+   SetMapElement(StructureMap, StuctureName)
+   
+   PokeP(CurrentMapElement(StructureMap)+#OffsetOf_Structures_DeclaredIn, DuplicateString(CurrentMapKey(Files)))
+   PokeL(CurrentMapElement(StructureMap)+#OffsetOf_Structures_DeclaredLine, TokenLine())
+   
+   VariableMap.p = NewMap(#ByteSize)
+   
+   PokeP(CurrentMapElement(StructureMap)+#OffsetOf_Structures_Fields, VariableMap)
+   
+   SeekToken()
+   
+   While TokenType() != #TypeKeywordEndStructure
+      
+      If TokenType() != #TypeVariableDeclare
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expected field variable declaration.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      FieldName.s = Token()
+      
+      CreateConstant("#OffsetOf_" + StuctureName + "_" + FieldName, #VariableTypeLong, "offsetof( struct _ebS_" + StuctureName + ", _ebF_" + FieldName + ") ", CurrentMapKey(Files), TokenLine(), #IdentifierTypeExternal)
+      
+      If FindMapKey(VariableMap, FieldName)
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. FieldName must be unique.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      SetMapElement(VariableMap, FieldName)
+      
+      NextToken()
+      
+      FieldType.b = CheckType()
+      
+      PokeB(CurrentMapElement(VariableMap), FieldType)
+      
+      SeekToken()
+      
+   Wend
+   
+   GarbageCheck()
+   
+EndProcedure
+
+
+Procedure ResolveStructure()
+   
+   
+   
+EndProcedure

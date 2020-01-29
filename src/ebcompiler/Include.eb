@@ -1,0 +1,137 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Include                                 
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckXInclude()
+   
+   NextToken()
+   
+   If TokenType() = #TypeString
+      
+      Path.s = CurrentMapKey(Files)
+      IncludePath.s = AbsolutePath(GetPathPart(Path)+Mid(Token(), 1, Len(Token())-2))
+      
+      If CommentPassthrough = #True
+         
+         AddProcedureEmit("")
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("// ; XIncludeFile " + IncludePath )
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("")
+         
+      EndIf
+      
+      If FindMapKey(Files, IncludePath) = #False
+         
+         TokenIndex.l = ElementIndex(ActiveTokenTable)
+         
+         Print("XIncluding ") : ConsoleTextColor(4) : Print("\""+IncludePath+"\"") : ResetConsole() : ConsoleTextBold() : Print("...\n")
+         
+         TokenizeSourceFile(IncludePath)
+         
+         SetFile(IncludePath)
+         ResetElement(ActiveTokenTable)
+         
+         CompileCPP11()
+         
+         SetFile(Path)
+         SetElementIndex(ActiveTokenTable, TokenIndex)
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Warning("XIncludeFile \""+ IncludePath+"\" was already included and will not be included again.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         If CommentPassthrough = #True
+            
+            AddProcedureEmit("")
+            AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+            AddProcedureEmit("// ; XIncludeFile was already included and was not included again. ")
+            AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+            AddProcedureEmit("")
+            
+         EndIf
+         
+      EndIf
+      
+      If CommentPassthrough = #True
+         
+         AddProcedureEmit("")
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("// ; End of XIncludeFile " + IncludePath )
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("")
+         
+      EndIf
+      
+      GarbageCheck()
+      
+   Else
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected path to include.", "Syntax: XIncludeFile \"Path/File.eb\"'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+EndProcedure
+
+Procedure CheckInclude()
+   
+   NextToken()
+   
+   If TokenType() = #TypeString
+      
+      Path.s = CurrentMapKey(Files)
+      IncludePath.s = AbsolutePath(GetPathPart(Path)+Mid(Token(), 1, Len(Token())-2))
+      
+      If CommentPassthrough = #True
+         
+         AddProcedureEmit("")
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("// ; IncludeFile " + IncludePath )
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("")
+         
+      EndIf
+      
+      TokenIndex.l = ElementIndex(ActiveTokenTable)
+      
+      Print("Including ") : ConsoleTextColor(4) : Print("\""+IncludePath+"\"") : ResetConsole() : ConsoleTextBold() : Print("...\n")
+      
+      TokenizeSourceFile(IncludePath)
+      
+      SetFile(IncludePath)
+      ResetElement(ActiveTokenTable)
+      
+      CompileCPP11()
+      
+      SetFile(Path)
+      SetElementIndex(ActiveTokenTable, TokenIndex)
+      
+      If CommentPassthrough = #True
+         
+         AddProcedureEmit("")
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("// ; End of IncludeFile " + IncludePath )
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("")
+         
+      EndIf
+      
+      GarbageCheck()
+      
+   Else
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected path to include.", "Syntax: XIncludeFile \"Path/File.eb\"'", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+EndProcedure

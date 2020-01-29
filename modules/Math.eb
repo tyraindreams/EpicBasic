@@ -1,0 +1,28 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <Math>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <cmath>
+
+ExternalProcedure.d Cos(Number.d)
+ExternalProcedure.d Sin(Number.d)
+ExternalProcedure.d Tan(Number.d)
+ExternalProcedure.d ACos(Number.d)
+ExternalProcedure.d ASin(Number.d)
+ExternalProcedure.d ATan(Number.d)
+ExternalProcedure.d ATan2(Number1.d, Number2.d)
+ExternalProcedure.d Exp(Number.d)
+ExternalProcedure.d Log(Number.d)
+ExternalProcedure.d Log10(Number.d)
+ExternalProcedure.d Pow(Number1.d, Number2.d)
+ExternalProcedure.d Sqr(Number.d)
+ExternalProcedure.d RoundUp(Number.d)
+ExternalProcedure.d RoundDown(Number.d)
+
+ExternalProcedure.i RandomRange(Maximum.i,Minimum.i)
+ExternalProcedure.i Random(Maximum.i)
+ExternalProcedure RandomSeed(Value.i)
+ExternalProcedure RandomData(Pointer.p, ByteLength.i)
+

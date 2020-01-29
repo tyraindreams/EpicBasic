@@ -1,0 +1,149 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Source Code Inspector                    
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Import <Console>
+Import <File>
+Import <RegularExpression>
+Import <String>
+Import <Process>
+
+XIncludeFile "../ebcompiler/EBTokens.eb"
+
+File.i = ReadFile(ProgramParameter(1))
+
+If File = -1
+   PrintN("Unable to open file: "+ProgramParameter(1))
+   End #Exit_Failure
+EndIf
+
+Output.i = CreateFile(ProgramParameter(1)+".html")
+
+If Output = -1
+   PrintN("Unable to create file: "+ProgramParameter(1)+".html")
+   End #Exit_Failure
+EndIf
+
+WriteStringN(Output, "<style> * { margin:0;} font:hover{ background-color:#CEE6F8;} code {font-family: monospace;}</style>")
+WriteStringN(Output, "<body bgcolor=\"#F0F7FF\"><code><p style=\"background-color: #9FC1DD\"><b>"+ProgramParameter(1)+"</b></p><table border=\"0\" cellspacing=\"0\" cellpadding=\"0\">")
+
+Line.i = 1 
+
+While Eof(File) != #True
+   
+   WriteString(Output, "<tr><td bgcolor=\"#9FC1DD\">&nbsp;"+Str(Line)+"&nbsp;</td><td>&nbsp;</td><td nowrap>")
+   
+   If ExamineRegularExpression(Regex, ReadString(File))
+   
+      While NextRegularExpressionMatch(Regex)
+         
+         Result.s = RegularExpressionMatchString(Regex)
+         Result = ReplaceString(Result, "&", "&amp;")
+         Result = ReplaceString(Result, ">", "&gt;")
+         Result = ReplaceString(Result, "<", "&lt;")
+         Result = ReplaceString(Result, "'", "&apos;")
+         Result = ReplaceString(Result, "\"", "&quot;")
+         Result = ReplaceString(Result, " ", "<font color=\"#A2A2A2\">&middot;</font>")
+         
+         If RegularExpressionMatchGroup(Regex) = #TypeWhiteSpace
+            
+            WriteString(Output, "<font><span title=\"Token Type: WhiteSpace\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeComment
+            
+            WriteString(Output, "<font color=\"#008000\"><span title=\"Token Type: Comment\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeProcedure
+            
+            WriteString(Output, "<b><font color=\"#000000\"><span title=\"Token Type: Procedure\">"+Result+"</span></font></b>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) >= #TypeKeywordDeclare And RegularExpressionMatchGroup(Regex) <= #TypeKeywordEnd
+            
+            WriteString(Output, "<b><font color=\"#800000\"><span title=\"Token Type: Keyword\">"+Result+"</span></font></b>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeString
+            
+            WriteString(Output, "<font color=\"#FF8000\"><span title=\"Token Type: String\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeImport
+            
+            WriteString(Output, "<font color=\"#9501FF\"><span title=\"Token Type: Import\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeDereference
+            
+            WriteString(Output, "<font color=\"#008000\"><span title=\"Token Type: Dereference\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeType
+            
+            WriteString(Output, "<b><font color=\"#335475\"><span title=\"Token Type: Type\">"+Result+"</span></font></b>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeFloat
+            
+            WriteString(Output, "<font color=\"#FF0000\"><span title=\"Token Type: Float\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeHexadecimal
+            
+            WriteString(Output, "<font color=\"#FF0000\"><span title=\"Token Type: Float\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeInteger
+            
+            WriteString(Output, "<font color=\"#FF0000\"><span title=\"Token Type: Integer\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeConstant
+            
+            WriteString(Output, "<b><font color=\"#800080\"><span title=\"Token Type: Constant\">"+Result+"</span></font></b>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeVariable Or RegularExpressionMatchGroup(Regex) = #TypeVariableDeclare
+            
+            WriteString(Output, "<font color=\"#0080C0\"><span title=\"Token Type: Variable\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeOpenParameter
+            
+            WriteString(Output, "<font color=\"#000000\"><span title=\"Token Type: Open Parenthesis\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeCloseParameter
+            
+            WriteString(Output, "<font color=\"#000000\"><span title=\"Token Type: Close Parenthesis\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeDelimiter
+            
+            WriteString(Output, "<font color=\"#000000\"><span title=\"Token Type: Delimiter\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) >= #TypeOperatorEqual And RegularExpressionMatchGroup(Regex) <= #TypeOperatorModulo
+            
+            WriteString(Output, "<font color=\"#000000\"><span title=\"Token Type: Operator\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeEndLine
+            
+            WriteString(Output, "<font color=\"#000000\"><span title=\"Token Type: EndLine\">"+Result+"</span></font>")
+            
+         ElseIf RegularExpressionMatchGroup(Regex) = #TypeUnknown
+            
+            WriteString(Output, "<font fgcolor=\"white\"; bgcolor=\"red\";><span title=\"Token Type: UnKnown\">"+Result+"</span></font>")
+            
+         Else
+            
+            WriteString(Output, "<font color=\"#000000\"><span title=\"Token Type: Other\">"+Result+"</span></font>")
+            
+         EndIf
+      
+      Wend
+   
+   EndIf
+   
+   WriteStringN(Output, "<font color=\"#A2A2A2\"><span title=\"Token Type: EndLine\">&#x021A9;</span></font></td></tr>")
+   Line = Line + 1
+
+Wend
+
+WriteStringN(Output, "</table></code></body>")
+
+FreeRegularExpression(Regex)
+
+CloseFile(Output)
+CloseFile(File)
+
+End #Exit_Success

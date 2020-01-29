@@ -1,0 +1,3 @@
+epicbasic.xml is the syntax highlighting file for katepart; the editor component of Kate and KDevelop and can be copied to ~/.kde/share/apps/katepart/syntax/
+epicbasic.tar.bz2 is a project template file with build system for EpicBasic projects and can be copied to ~/.kde/share/apps/kdevappwizard/templates/
+epicbasic-cmake.tar.bz2  is a project template file with build system for EpicBasic projects and can be copied to ~/.kde/share/apps/kdevappwizard/templates/

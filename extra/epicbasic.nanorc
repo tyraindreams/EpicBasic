@@ -1,0 +1,13 @@
+# EpicBasic syntax highlighting
+syntax "EpicBasic" "\.eb$"
+
+icolor brightred "((^[ ]*)(declare|externalprocedure|endstructure|enumeration|endenumeration|newlist|newmap|newvector|structure|import|global|while|wend|if|and|or|elseif|else|endif|for|to|step|next|break|endprocedure|procedurereturn|procedure|tlink|tconstant|tinitialize|tincludefile|tincludefile|xincludefile|includefile|end)( |$|\.))"
+icolor brightwhite "((^[ ]*)(calldebugger|debug|compilerprint|compilerconfigure)( |$|\.))"
+icolor brightcyan "[a-zA-Z0-9][a-zA-Z0-9_]*[:space:]*\("
+color brightmagenta "([#][a-zA-Z0-9][a-zA-Z0-9_]*)"
+icolor red "([0-9]+)"
+icolor  cyan "([-+/*=!~%&|%<>\(\)\[\])"
+icolor brightblue "([\.][a-zA-Z0-9]+)"
+color green "(;.*$)"
+color magenta "([<].+[>])"
+icolor yellow ""(\\.|[^"])*""

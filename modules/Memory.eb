@@ -1,0 +1,46 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <Memory>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <iostream>
+TIncludeFile <string>
+TIncludeFile <cstring>
+TIncludeFile <cstdlib>
+
+TLink <-std=c++11>
+
+TConstant.b #ByteSize    = <sizeof(char)>
+TConstant.b #CharSize    = <sizeof(char)>
+TConstant.b #WordSize    = <sizeof(short)>
+TConstant.b #IntegerSize = <sizeof(int)>
+TConstant.b #LongSize    = <sizeof(long)>
+TConstant.b #QuadSize    = <sizeof(long long)>
+TConstant.b #PointerSize = <sizeof(char*)>
+
+TConstant.b #SizeOf_b    = <sizeof(char)>
+TConstant.b #SizeOf_c    = <sizeof(char)>
+TConstant.b #SizeOf_w    = <sizeof(short)>
+TConstant.b #SizeOf_i    = <sizeof(int)>
+TConstant.b #SizeOf_l    = <sizeof(long)>
+TConstant.b #SizeOf_q    = <sizeof(long long)>
+TConstant.b #SizeOf_p    = <sizeof(char*)>
+
+ExternalProcedure.p AllocateMemory(Size.i)
+ExternalProcedure.p ZeroAllocateMemory(Size.i, Type.i)
+ExternalProcedure.p ReAllocateMemory(Memory.p, Size.i)
+ExternalProcedure   FreeMemory(Memory.p)
+ExternalProcedure   PokeC(Address.p, Character.c)
+ExternalProcedure.c PeekC(Address.p)
+ExternalProcedure   PokeB(Address.p, Byte.c)
+ExternalProcedure.b PeekB(Address.p)
+ExternalProcedure   PokeI(Address.p, Integer.i)
+ExternalProcedure.i PeekI(Address.p)
+ExternalProcedure   PokeL(Address.p, Long.l)
+ExternalProcedure.l PeekL(Address.p)
+ExternalProcedure   PokeP(Address.p, Pointer.p)
+ExternalProcedure.p PeekP(Address.p)
+ExternalProcedure   PokeS(Address.p, String.s)
+ExternalProcedure.s PeekS(Address.p)
+ExternalProcedure.p DuplicateString(String.s)

@@ -1,0 +1,442 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic ProcedureData                            
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure QueueProcedure(ProcedureName.s)
+
+   SetMapElement(ProcedureList, ProcedureName)
+
+EndProcedure
+
+
+Procedure.b ProcedureDeclared(ProcedureName.s)
+   
+   If FindMapKey(ProcedureMap, ProcedureName) = #False
+      
+      ProcedureReturn #False
+      
+   EndIf
+   
+   ResetProcedure.s = CurrentMapKey(ProcedureMap)
+   
+   SetMapElement(ProcedureMap, ProcedureName)
+   CurrentProcedure.p = CurrentMapElement(ProcedureMap)
+   SetMapElement(ProcedureMap, ResetProcedure)
+   
+   ProcedureReturn PeekB(CurrentProcedure+#OffsetOf_Procedures_Declared)
+   
+EndProcedure
+
+
+Procedure.b ProcedureReturnType(ProcedureName.s)
+   
+   If FindMapKey(ProcedureMap, ProcedureName) = #False
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(ProcedureName + "() is not a declared procedure.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   ResetProcedure.s = CurrentMapKey(ProcedureMap)
+   
+   SetMapElement(ProcedureMap, ProcedureName)
+   CurrentProcedure.p = CurrentMapElement(ProcedureMap)
+   SetMapElement(ProcedureMap, ResetProcedure)
+   
+   ProcedureReturn PeekB(CurrentProcedure+#OffsetOf_Procedures_ReturnType)
+   
+EndProcedure
+
+
+Procedure.l ProcedureParameterCount(ProcedureName.s)
+   
+   ResetProcedure.s = CurrentMapKey(ProcedureMap)
+   
+   SetMapElement(ProcedureMap, ProcedureName)
+   CurrentProcedure.p = CurrentMapElement(ProcedureMap)
+   SetMapElement(ProcedureMap, ResetProcedure)
+   ActiveParameterMap.p = PeekP(CurrentProcedure+#OffsetOf_Procedures_Parameters)
+   
+   ProcedureReturn ElementCount(ActiveParameterMap)
+   
+EndProcedure
+
+
+Procedure.b ProcedureParameterType(ProcedureName.s, Index.l)
+   
+   ResetProcedure.s = CurrentMapKey(ProcedureMap)
+   
+   SetMapElement(ProcedureMap, ProcedureName)
+   CurrentProcedure.p = CurrentMapElement(ProcedureMap)
+   SetMapElement(ProcedureMap, ResetProcedure)
+   ActiveParameterMap.p = PeekP(CurrentProcedure+#OffsetOf_Procedures_Parameters)
+   
+   SetElementIndex(ActiveParameterMap, Index)
+   
+   ProcedureReturn PeekB(CurrentMapElement(ActiveParameterMap))
+   
+EndProcedure
+
+
+Procedure CreateProcedure(ProcedureName.s, ReturnType.b, Path.s, Line.l, ProcedureType.b)
+   
+   If FindMapKey(ProcedureMap, ProcedureName)
+      
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(ProcedureName + "() was already declared.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), 1)
+      
+      SetMapElement(ProcedureMap, ProcedureName)
+      
+      SetMapElement(Files, PeekS(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath+#PointerSize)))
+      
+      ErrorNote(ProcedureName + "() was declared here.", PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)), PeekS(PeekP(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines))), PeekL(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath+#PointerSize), 1)
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetMapElement(ProcedureMap, ProcedureName)
+   ActiveProcedure = CurrentMapElement(ProcedureMap)
+   
+   PokeB(ActiveProcedure+#OffsetOf_Procedures_ProcedureType, ProcedureType)
+   PokeB(ActiveProcedure+#OffsetOf_Procedures_ReturnType, ReturnType)
+   PokeP(ActiveProcedure+#OffsetOf_Procedures_Parameters, NewMap(#ByteSize))
+   PokeP(ActiveProcedure+#OffsetOf_Procedures_Variables, NewMap(#SizeOf_Variables))
+   PokeP(ActiveProcedure+#OffsetOf_Procedures_Emit, NewList(#PointerSize))
+   PokeP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel, NewList(#SizeOf_BlockLevel))
+   PokeP(ActiveProcedure+#OffsetOf_Procedures_DeclaredPath, DuplicateString(Path))
+   PokeL(ActiveProcedure+#OffsetOf_Procedures_DeclaredLine, Line)
+   PokeB(ActiveProcedure+#OffsetOf_Procedures_Declared, #False)
+   
+EndProcedure
+
+
+Procedure AddProcedureParameter(Name.s, Type.b)
+   
+   ActiveParameterMap.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_Parameters)
+   
+   If FindMapKey(ActiveParameterMap, Name)
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Parameter names must be unique.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetMapElement(ActiveParameterMap, Name)
+   PokeB(CurrentMapElement(ActiveParameterMap), Type)
+   
+EndProcedure
+
+
+Procedure AddProcedureVariable(Name.s, Type.b)
+   
+   ActiveParameterMap.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_Parameters)
+   
+   If FindMapKey(ActiveParameterMap, Name)
+      
+      SetMapElement(ActiveParameterMap, Name)
+      
+      If PeekB(CurrentMapElement(ActiveParameterMap)) != Type
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error(Name + " was declared as a parameter in current procedure space with a different type.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         SetMapElement(Files, PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)))
+         SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath+#PointerSize))
+         
+         ErrorNote(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath+#PointerSize), 1)
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      ResetFile.s = CurrentMapKey(Files)
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Warning(Name + " was already declared in current procedure space.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      SetMapElement(Files, PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath+#PointerSize))
+      
+      Note(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(ProcedureMap)+#OffsetOf_Procedures_DeclaredPath+#PointerSize), 1)
+      
+      SetMapElement(Files, ResetFile)
+      
+      ProcedureReturn
+      
+   EndIf
+   
+   If FindMapKey(GlobalMap, Name)
+      
+      SetMapElement(GlobalMap, Name)
+      
+      If PeekB(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_GlobalType) != Type
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error(Name + " was already declared with a different type.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         SetMapElement(Files, PeekS(PeekP(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredPath)))
+         SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine))
+         
+         ErrorNote(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(GlobalMap)+#OffsetOf_Files_Lines)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_Position))
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      ResetFile = CurrentMapKey(Files)
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Warning(Name + " was already declared.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      SetMapElement(Files, PeekS(PeekP(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredPath)))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine))
+      
+      Note(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredPath)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_Position))
+      
+      SetMapElement(Files, ResetFile)
+      
+      ProcedureReturn
+      
+   EndIf
+   
+   ActiveVariableMap.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_Variables)
+   
+   If FindMapKey(ActiveVariableMap, Name)
+      
+      SetMapElement(ActiveVariableMap, Name)
+      
+      If PeekB(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_Type) != Type
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error(Name + " was already declared with a different type.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         SetMapElement(Files, PeekS(PeekP(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath)))
+         SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredLine))
+         
+         ErrorNote(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath+#PointerSize), PeekL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath+#PointerSize+#LongSize))
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      ResetFile = CurrentMapKey(Files)
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Warning(Name + " was already declared.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      SetMapElement(Files, PeekS(PeekP(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath)))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath+#PointerSize))
+      
+      Note(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath+#PointerSize), PeekL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath+#PointerSize+#LongSize))
+      
+      SetMapElement(Files, ResetFile)
+      
+      ProcedureReturn
+      
+   EndIf
+   
+   SetMapElement(ActiveVariableMap, Name)
+   PokeB(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_Type, Type)
+   PokeP(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredPath, DuplicateString(CurrentMapKey(Files)))
+   PokeL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_DeclaredLine, TokenLine())
+   PokeL(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_Position, TokenPosition())
+   
+EndProcedure
+
+
+Procedure.b VariableType(Name.s)
+   
+   ActiveParameterMap.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_Parameters)
+   
+   If FindMapKey(ActiveParameterMap, Name)
+      
+      SetMapElement(ActiveParameterMap, Name)
+      
+      ProcedureReturn PeekB(CurrentMapElement(ActiveParameterMap))
+      
+   EndIf
+   
+   If FindMapKey(GlobalMap, Name)
+      
+      SetMapElement(GlobalMap, Name)
+      
+      ProcedureReturn PeekB(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_GlobalType)
+      
+   EndIf
+   
+   ActiveVariableMap.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_Variables)
+   
+   If FindMapKey(ActiveVariableMap, Name)
+      
+      SetMapElement(ActiveVariableMap, Name)
+      
+      ProcedureReturn PeekB(CurrentMapElement(ActiveVariableMap)+#OffsetOf_Variables_Type)
+      
+   EndIf
+   
+   ProcedureReturn #VariableTypeNull
+   
+EndProcedure
+
+
+Procedure AddProcedureEmit(Line.s)
+   
+   If CommentPassthrough = #False And Len(Line) = 0
+      
+      ProcedureReturn
+      
+   EndIf
+   
+   Line = Space((ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel))*3)+3) + Line
+   AddListElement(PeekP(ActiveProcedure+#OffsetOf_Procedures_Emit))
+   PokeP(CurrentListElement(PeekP(ActiveProcedure+#OffsetOf_Procedures_Emit)), DuplicateString(Line))
+   
+EndProcedure
+
+
+Procedure AddDeBlockedProcedureEmit(Line.s)
+   
+   Line = Space((ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel))*3)) + Line
+   AddListElement(PeekP(ActiveProcedure+#OffsetOf_Procedures_Emit))
+   PokeP(CurrentListElement(PeekP(ActiveProcedure+#OffsetOf_Procedures_Emit)), DuplicateString(Line))
+   
+EndProcedure
+
+
+Procedure IncreaseBlockLevel(BlockType.b)
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   AddListElement(BlockLevel)
+   
+   PokeB(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_Type, BlockType)
+   PokeB(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_SpecialFlag, #False)
+   
+EndProcedure
+
+
+Procedure DecreaseBlockLevel()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   TruncateListElement(BlockLevel)
+   
+EndProcedure
+
+
+Procedure.b BlockLevelType()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   ProcedureReturn PeekB(CurrentListElement(BlockLevel))
+   
+EndProcedure
+
+
+Procedure.b BlockLevelSpecialFlag()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   ProcedureReturn PeekB(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_SpecialFlag)
+   
+EndProcedure
+
+
+Procedure SetBlockLevelSpecialFlag()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   PokeB(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_SpecialFlag, #True)
+   
+EndProcedure
+
+
+Procedure SetBlockLevelExpressionType(Type.b)
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   PokeB(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_ExpressionType, Type)
+   
+EndProcedure
+
+Procedure.b BlockLevelExpressionType()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   ProcedureReturn PeekB(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_ExpressionType)
+   
+EndProcedure
+
+Procedure SetBlockLevelExpression(Expression.s)
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   PokeP(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_Expression, DuplicateString(Expression))
+   
+EndProcedure
+
+
+Procedure.s BlockLevelExpression()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   ProcedureReturn PeekS(PeekP(CurrentListElement(BlockLevel)+#OffsetOf_BlockLevel_Expression))
+   
+EndProcedure
+
+
+Procedure CheckBlockLevel()
+   
+   BlockLevel.p = PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)
+   
+   If ElementCount(BlockLevel) > 0
+      
+      If BlockLevelType() = #BlockTypeWhile
+      
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. While without a Wend.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+         End #Exit_Failure
+         
+      EndIf
+      
+      If BlockLevelType() = #BlockTypeIf
+      
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. If without an EndIf.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+         End #Exit_Failure
+         
+      EndIf
+      
+      If BlockLevelType() = #BlockTypeFor
+      
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. For without a Next.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+         End #Exit_Failure
+         
+      EndIf
+      
+      If BlockLevelType() = #BlockTypeSelect
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Select without an EndSelect.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+         End #Exit_Failure
+         
+      EndIf
+      
+   EndIf
+   
+EndProcedure

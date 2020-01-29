@@ -1,0 +1,468 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic TargetCPP11                              
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CompileMainPath()
+
+   TokenizeSourceFile(MainPath)
+
+   SetFile(MainPath)
+
+   CreateProcedure("_EBMain", #VariableTypeNull, MainPath, 1, #IdentifierTypeInternal)
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":_EBMain():1")
+         
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_CallTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   If CommentPassthrough = #True
+      
+      AddProcedureEmit("")
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("// ; MainFile " + MainPath )
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("")
+      
+   EndIf
+
+   If SyntaxCheck = #True
+      
+      ConsoleTextBold() : Print("\nSyntax checking MainFile ") : ConsoleTextColor(4) : Print("\""+MainPath+"\"") : ResetConsole() : ConsoleTextBold() : Print("...\n")
+      
+   Else
+      
+      ConsoleTextBold() : Print("\nCompiling MainFile ") : ConsoleTextColor(4) : Print("\""+MainPath+"\"") : ResetConsole() : ConsoleTextBold() : Print("...\n")
+      
+   EndIf
+
+   CompileCPP11()
+
+   CheckBlockLevel()
+
+   If CommentPassthrough = #True
+      
+      AddProcedureEmit("")
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("// ; End of MainFile " + MainPath )
+      AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+      AddProcedureEmit("")
+      
+   EndIf
+
+   QueueProcedure("_EBMain")
+
+EndProcedure
+
+
+Procedure NotImplemented()
+   
+   SetElementIndex(ActiveLines, TokenLine())
+   AddProcedureEmit("// " + PeekS(PeekP(CurrentListElement(ActiveLines))))
+   
+   While NextElement(ActiveTokenTable) = #True
+      
+      If TokenType() = #TypeEndLine
+         
+         Break
+         
+      EndIf
+      
+   Wend
+   
+EndProcedure
+
+
+Procedure CompileCPP11()
+   
+   While NextElement(ActiveTokenTable)
+      
+      CurrentTokenType.b = TokenType()
+      
+      Debug CurrentMapKey(Files) + ":" + Str(TokenLine())
+      
+      WorkingEmit = ""
+      
+      If CurrentTokenType = #TypeCompilerCallDebugger
+         
+         If DebuggerFlag = #True
+            
+            WorkingEmit = "_ebD_CallDebugger(_ebD_Debugger_Flag_Call, \"" + CurrentMapKey(Files) + ":" + Str(TokenLine()) + "\") ;"
+            
+         EndIf
+         
+         GarbageCheck()
+         
+      ElseIf CurrentTokenType = #TypeCompilerDebug
+         
+         If DebuggerFlag = #True
+            
+            NextToken()
+            
+            WorkingEmit = "std::cout << "
+            CheckConcatenate()
+            WorkingEmit + " << std::endl ;"
+            
+         Else
+            
+            NotImplemented()
+            
+         EndIf
+         
+      ElseIf CurrentTokenType = #TypeCompilerPrint
+         
+         NextToken()
+         
+         If TokenType() != #TypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Expected string to print.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         PrintN(Mid(Token(), 1, Len(Token())-2))
+         
+      ElseIf CurrentTokenType = #TypeCompilerConfigure
+         
+         ConfigureConstant()
+         
+      ElseIf CurrentTokenType = #TypeComment
+         
+         BlockComment()
+         
+      ElseIf CurrentTokenType = #TypeKeywordStructure
+         
+         CheckStructure()
+         
+      ElseIf CurrentTokenType = #TypeContainer
+         
+         NotImplemented()
+         
+      ElseIf CurrentTokenType = #TypeKeywordImport
+         
+         CheckImport()
+         
+      ElseIf CurrentTokenType = #TypeKeywordXIncludeFile
+         
+         CheckXInclude()
+         
+      ElseIf CurrentTokenType = #TypeKeywordIncludeFile
+         
+         CheckInclude()
+         
+      ElseIf CurrentTokenType = #TypeKeywordTIncludeFile
+         
+         CheckTInclude()
+         
+      ElseIf CurrentTokenType = #TypeKeywordTLink
+         
+         CheckTLink()
+         
+      ElseIf TokenType() = #TypeKeywordTInitialize
+         
+         CheckTInitialize()
+         
+      ElseIf CurrentTokenType = #TypeKeywordTConstant
+         
+         CheckTConstant()
+         
+      ElseIf CurrentTokenType = #TypeKeywordProcedure
+         
+         CheckProcedure()
+         
+      ElseIf CurrentTokenType = #TypeKeywordDeclare
+         
+         CheckDeclare()
+         
+      ElseIf CurrentTokenType = #TypeKeywordExternalProcedure
+         
+         CheckExternalProcedure()
+         
+      ElseIf CurrentTokenType = #TypeKeywordEndProcedure
+         
+         ProcedureReturn
+         
+      ElseIf CurrentTokenType = #TypeKeywordProcedureReturn
+         
+         CheckProcedureReturn()
+         
+      ElseIf CurrentTokenType = #TypeKeywordEnd
+         
+         CheckEnd()
+         
+      ElseIf CurrentTokenType = #TypeKeywordBreak
+         
+         WorkingEmit = "break ;"
+         
+         GarbageCheck()
+         
+      ElseIf CurrentTokenType = #TypeKeywordGlobal
+         
+         NextToken()
+         
+         If TokenType() != #TypeVariableDeclare And TokenType() != #TypeVariableDeclare
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Expected variable declaration.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         If TokenType() = #TypeVariableDeclare
+            
+            VariableName.s = Token()
+            
+            NextToken()
+            
+            AddGlobalVariable(VariableName, CheckType())
+            
+         ElseIf TokenType() = #TypeVariable
+            
+            VariableName = Token()
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Variable type was not explicitly given. Defaulting to Integer.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            AddGlobalVariable(VariableName, #VariableTypeInteger)
+            
+         EndIf
+         
+         GarbageCheck()
+         
+      ElseIf CurrentTokenType = #TypeKeywordFor
+         
+         CheckFor()
+         
+      ElseIf CurrentTokenType = #TypeKeywordNext
+         
+         CheckNext()
+         
+      ElseIf CurrentTokenType = #TypeKeywordSelect
+         
+         CheckSelect()
+         
+      ElseIf CurrentTokenType = #TypeKeywordCase
+         
+         CheckCase()
+         
+      ElseIf CurrentTokenType = #TypeKeywordDefault
+         
+         CheckDefault()
+         
+      ElseIf CurrentTokenType = #TypeKeywordEndSelect
+         
+         CheckEndSelect()
+         
+      ElseIf CurrentTokenType = #TypeKeywordWhile
+         
+         CheckWhile()
+         
+      ElseIf CurrentTokenType = #TypeKeywordWend
+         
+         CheckWend()
+         
+      ElseIf CurrentTokenType = #TypeKeywordIf Or CurrentTokenType = #TypeKeywordElseIf
+         
+         CheckIf()
+         
+      ElseIf CurrentTokenType = #TypeKeywordElse
+         
+         CheckElse()
+         
+      ElseIf CurrentTokenType = #TypeKeywordEndIf
+         
+         CheckEndIf()
+         
+      ElseIf CurrentTokenType = #TypeKeywordEnumeration
+         
+         BlockEnumeration()
+         
+      ElseIf CurrentTokenType = #TypeString Or CurrentTokenType = #TypeFloat Or CurrentTokenType = #TypeInteger
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Expression is not assignable.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      ElseIf CurrentTokenType = #TypeConstant
+         
+         BlockConstant()
+         
+      ElseIf CurrentTokenType = #TypeVariable Or CurrentTokenType = #TypeVariableDeclare
+         
+         If CurrentTokenType = #TypeVariableDeclare
+            
+            VariableName = Token()
+            
+            NextToken()
+            
+            CurrentType.b = CheckType()
+            AddProcedureVariable(VariableName, CurrentType)
+            
+         Else
+            
+            VariableName = Token()
+            
+            If VariableType(VariableName) = #VariableTypeNull
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Warning("Variable type was not explicitly given. Defaulting to Integer.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               AddProcedureVariable(VariableName, #VariableTypeInteger)
+               
+               CurrentType = #VariableTypeInteger
+               
+            Else
+               
+               CurrentType = VariableType(VariableName)
+               
+            EndIf
+            
+         EndIf
+         
+         NextElement(ActiveTokenTable)
+         
+         If TokenType() != #TypeEndLine
+            
+            WorkingEmit = "_ebV_" + VariableName + " "
+            
+            If CurrentType = #VariableTypeString And TokenType() != #TypeOperatorAdd And TokenType() != #TypeOperatorEqual
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Syntax error. String concatenations can only use the '=' and '+' operators.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+            If TokenType() >= #TypeOperatorAdd And TokenType() <= #TypeOperatorModulo
+               
+               If CurrentType = #VariableTypeString
+                  
+                  WorkingEmit + "+= "
+                  
+               Else
+                  
+                  WorkingEmit + "= " + "_ebV_" + VariableName + " " + Token() + " "
+                  
+               EndIf
+               
+            ElseIf TokenType() = #TypeOperatorEqual
+               
+               WorkingEmit + "= "
+               
+            Else
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Syntax error. Expected operator.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+            If CurrentType = #VariableTypeString
+               
+               SeekToken()
+               
+               CheckConcatenate()
+               
+            Else
+               
+               SeekToken()
+               
+               CheckExpression(CurrentType)
+               
+            EndIf
+            
+            If TokenType() = #TypeComment
+               
+               If Len(WorkingEmit) > 0
+                  
+                  WorkingEmit + "; // " + Token()
+                  
+               EndIf
+               
+               NextElement(ActiveTokenTable)
+               
+            ElseIf TokenType() = #TypeEndLine
+               
+               If Len(WorkingEmit) > 0
+               
+                  WorkingEmit + ";"
+               
+               EndIf
+               
+            Else
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Error("Garbage at end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               End #Exit_Failure
+               
+            EndIf
+            
+         Else
+            
+            NotImplemented()
+            
+         EndIf
+         
+      ElseIf CurrentTokenType = #TypeProcedure
+         
+         If ProcedureReturnType(Token()) != #VariableTypeNull
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Unused procedure return value.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            WorkingEmit = "static_cast<void>( "
+            
+            CallProcedure()
+            
+            WorkingEmit + ") "
+            
+         Else
+            
+            CallProcedure()
+            
+         EndIf
+         
+         GarbageCheck()
+         
+      ElseIf CurrentTokenType = #TypeEndLine
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expression not understood.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      If Len(WorkingEmit) != 0
+         
+         If DebuggerFlag = #True
+            
+            SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+            
+            AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+            
+         EndIf
+         
+         AddProcedureEmit(WorkingEmit)
+         
+      EndIf
+      
+   Wend
+   
+   ProcedureReturn
+
+EndProcedure

@@ -1,0 +1,48 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic GarbageCheck                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+
+Procedure GarbageCheck()
+   
+   If NextElement(ActiveTokenTable)
+      
+      TokenType.b = TokenType()
+      
+      If TokenType = #TypeComment
+         
+         If Len(WorkingEmit) > 0
+            
+            WorkingEmit + "; // " + Token()
+            
+         EndIf
+         
+         NextElement(ActiveTokenTable)
+         
+         ProcedureReturn
+         
+      ElseIf TokenType = #TypeEndLine
+         
+         If Len(WorkingEmit) > 0
+         
+            WorkingEmit + ";"
+         
+         EndIf
+         
+         ProcedureReturn
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Garbage at end of line.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+   EndIf
+   
+EndProcedure

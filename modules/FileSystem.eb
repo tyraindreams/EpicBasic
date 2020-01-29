@@ -1,0 +1,46 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <FileSystem>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <dirent.h>
+TIncludeFile <string>
+TIncludeFile <cstdio>
+TIncludeFile <unistd.h>
+TIncludeFile <cstring>
+TIncludeFile <sys/param.h>
+TIncludeFile <sys/stat.h>
+TIncludeFile <fnmatch.h>
+TIncludeFile <pwd.h>
+TIncludeFile <grp.h>
+
+TConstant.b #EntryFile = <DT_REG>
+TConstant.b #EntryDirectory = <DT_DIR>
+TConstant.b #EntryBlock = <DT_BLK>
+TConstant.b #EntryLink = <DT_LNK>
+TConstant.b #EntryCharacter = <DT_CHR>
+
+ExternalProcedure.p ExamineDirectory(Path.s, Pattern.s)
+ExternalProcedure.p OpenDirectory(Path.s)
+ExternalProcedure.b NextDirectoryEntry(Directory.p)
+ExternalProcedure.s DirectoryEntryName(Directory.p)
+ExternalProcedure.b DirectoryEntryType(Directory.p)
+ExternalProcedure   CloseDirectory(Directory.p)
+ExternalProcedure.s GetCurrentDirectory()
+ExternalProcedure   SetCurrentDirectory(Path.s)
+ExternalProcedure.i PathSize(Path.s)
+ExternalProcedure.i PathAccessTime(Path.s)
+ExternalProcedure.i PathModifiedTime(Path.s)
+ExternalProcedure.s PathOwner(Path.s)
+ExternalProcedure.i PathOwnerID(Path.s)
+ExternalProcedure.s PathGroup(Path.s)
+ExternalProcedure.i PathGroupID(Path.s)
+ExternalProcedure.s PathMode(Path.s)
+ExternalProcedure.i PathModeID(Path.s)
+ExternalProcedure.b IsFile(Path.s)
+ExternalProcedure.i IsDirectory(Path.s)
+ExternalProcedure.b DeleteFile(Path.s)
+ExternalProcedure.s GetPathPart(Path.s)
+ExternalProcedure.s GetFilePart(Path.s)
+ExternalProcedure.s AbsolutePath(Path.s)

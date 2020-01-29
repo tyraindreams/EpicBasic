@@ -1,0 +1,325 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Concatenate                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckConcatenate()
+   
+   WriteString.l = 0
+   LookBehind.s = ""
+   
+   While 1
+      
+      TokenType.b = TokenType()
+      
+      If TokenType = #TypeString
+         
+         WriteString + 1
+         
+         LookBehind + Mid(Token(), 1, Len(Token())-2)
+         
+      ElseIf TokenType = #TypeProcedure
+         
+         If WriteString > 0
+            
+            WorkingEmit + "\"" + LookBehind + "\" + "
+            
+            LookBehind = ""
+            
+            WriteString = 0
+            
+         EndIf
+         
+         If ProcedureReturnType(Token()) != #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. String concatenations can only contain literal strings and string type variables and the only operator is '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         CallProcedure()
+         
+      ElseIf TokenType = #TypeConstant
+         
+         If WriteString > 0
+            
+            WorkingEmit + "\"" + LookBehind + "\" + "
+            
+            LookBehind = ""
+            
+            WriteString = 0
+            
+         EndIf
+         
+         If ConstantType(Token()) != #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. String concatenations can only contain literal strings and string type variables and the only operator is '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + "std::string( " + ConstantMacro(Token()) + " ) "
+         
+      ElseIf TokenType = #TypeVariable Or TokenType() = #TypeVariableDeclare
+         
+         If WriteString > 0
+            
+            WorkingEmit + "\"" + LookBehind + "\" + "
+            
+            LookBehind = ""
+            
+            WriteString = 0
+            
+         EndIf
+         
+         If TokenType = #TypeVariableDeclare
+            
+            VariableName.s = Token()
+            
+            NextToken()
+            
+            CurrentType.b = CheckType()
+            
+            AddProcedureVariable(VariableName, CurrentType)
+            
+         ElseIf TokenType = #TypeVariable
+            
+            VariableName = Token()
+            
+            If VariableType(VariableName) = #VariableTypeNull
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Warning("Variable type was not explicitly given. Defaulting to String.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               AddProcedureVariable(VariableName, #VariableTypeString)
+               
+               CurrentType = #VariableTypeString
+               
+            Else
+               
+               CurrentType = VariableType(VariableName)
+               
+            EndIf
+            
+         EndIf
+         
+         If CurrentType != #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Can't mix integers or floats with strings.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + "_ebV_" + VariableName + " "
+         
+      ElseIf TokenType = #TypeInteger Or TokenType = #TypeFloat
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Can't mix integers or floats with strings.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. String concatenations can only contain literal strings, string type variables, constant strings and operator '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      NextElement(ActiveTokenTable)
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeEndLine Or TokenType = #TypeCloseParameter Or TokenType = #TypeDelimiter Or TokenType = #TypeKeywordAnd Or TokenType = #TypeKeywordOr
+         
+         If WriteString > 0
+            
+            WorkingEmit + "\"" + LookBehind + "\" "
+            
+            LookBehind = ""
+            
+            WriteString = 0
+            
+         EndIf
+         
+         ProcedureReturn
+         
+      EndIf
+      
+      If TokenType != #TypeOperatorAdd
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. String concatenations can only contain literal strings, string type variables, constant strings and operator '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      If WriteString = 0
+         
+         WorkingEmit + "+ "
+         
+      EndIf
+      
+      SeekToken()
+      
+   Wend
+   
+EndProcedure
+
+Procedure CompareConcatenate()
+   
+   Compares.b = #False
+   
+   While 1
+      
+      TokenType.b = TokenType()
+      
+      If TokenType = #TypeString
+         
+         WorkingEmit + "std::string( " + Token() + " ) "
+         
+      ElseIf TokenType = #TypeProcedure
+         
+         If ProcedureReturnType(Token()) != #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. String comparisons can only contain literal strings and string type variables and the only operator is '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         CallProcedure()
+         
+      ElseIf TokenType = #TypeConstant
+         
+         If ConstantType(Token()) != #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. String comparisons can only contain literal strings and string type variables and the only operator is '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + "std::string( " + ConstantMacro(Token()) + " ) "
+         
+      ElseIf TokenType = #TypeVariable Or TokenType() = #TypeVariableDeclare
+         
+         If TokenType = #TypeVariableDeclare
+            
+            VariableName.s = Token()
+            
+            NextToken()
+            
+            CurrentType.b = CheckType()
+            
+            AddProcedureVariable(VariableName, CurrentType)
+            
+         ElseIf TokenType = #TypeVariable
+            
+            VariableName = Token()
+            
+            If VariableType(VariableName) = #VariableTypeNull
+               
+               SetElementIndex(ActiveLines, TokenLine())
+               Warning("Variable type was not explicitly given. Defaulting to String.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+               
+               AddProcedureVariable(VariableName, #VariableTypeString)
+            Else
+               
+               CurrentType = VariableType(VariableName)
+               
+            EndIf
+            
+         EndIf
+         
+         If CurrentType != #VariableTypeString
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Can't compare integers or floats with strings.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         WorkingEmit + "_ebV_" + VariableName + " "
+         
+      ElseIf TokenType = #TypeInteger Or TokenType = #TypeFloat
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Can't mix integers or floats with strings.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. String comparisons can only contain literal strings and string type variables and the only operator is '+'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      NextElement(ActiveTokenTable)
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeEndLine Or TokenType = #TypeCloseParameter Or TokenType = #TypeDelimiter Or TokenType = #TypeKeywordAnd Or TokenType = #TypeKeywordOr
+         
+         ProcedureReturn
+         
+      EndIf
+      
+      If TokenType = #TypeOperatorAdd
+         
+         WorkingEmit + "+ "
+         
+      ElseIf TokenType >= #TypeOperatorEqual And TokenType <= #TypeOperatorLess
+         
+         If Compares = #True
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Expression already compares values.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+         Compares = #True
+         
+         If TokenType = #TypeOperatorEqual
+            
+            WorkingEmit + "== "
+            
+         ElseIf TokenType = #TypeOperatorNotEqual
+            
+            WorkingEmit + "!= "
+            
+         Else
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Error("Syntax error. Strings can only be compared with '=' and '!='.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            End #Exit_Failure
+            
+         EndIf
+         
+      EndIf
+      
+      SeekToken()
+      
+   Wend
+   
+EndProcedure

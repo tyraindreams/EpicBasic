@@ -1,0 +1,273 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic EBTokens                                 
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+; Enumerate the Token types
+Enumeration
+   #TypeNone
+   #TypeWhiteSpace
+   #TypeComment
+   #TypeProcedureReference
+   #TypeProcedure
+   #TypeContainer
+   #TypeKeywordDeclare
+   #TypeKeywordExternalProcedure
+   #TypeKeywordEndStructure
+   #TypeKeywordStructure
+   #TypeKeywordEnumeration
+   #TypeKeywordEndEnumeration
+   #TypeKeywordNewList
+   #TypeKeywordNewMap
+   #TypeKeywordNewVector
+   #TypeKeywordImport
+   #TypeKeywordGlobal
+   #TypeKeywordSelect
+   #TypeKeywordCase
+   #TypeKeywordDefault
+   #TypeKeywordEndSelect
+   #TypeKeywordWhile
+   #TypeKeywordWend
+   #TypeKeywordIf
+   #TypeKeywordAnd
+   #TypeKeywordOr
+   #TypeKeywordElseIf
+   #TypeKeywordElse
+   #TypeKeywordEndIf
+   #TypeKeywordFor
+   #TypeKeywordTo
+   #TypeKeywordStep
+   #TypeKeywordNext
+   #TypeKeywordBreak
+   #TypeKeywordEndProcedure
+   #TypeKeywordProcedureReturn
+   #TypeKeywordProcedure
+   #TypeKeywordTLink
+   #TypeKeywordTConstant
+   #TypeKeywordTInitialize
+   #TypeKeywordTIncludeFile
+   #TypeKeywordXIncludeFile
+   #TypeKeywordIncludeFile
+   #TypeKeywordEnd
+   #TypeCompilerCallDebugger
+   #TypeCompilerDebug
+   #TypeCompilerPrint
+   #TypeCompilerConfigure
+   #TypeString
+   #TypeImport
+   #TypeDereference
+   #TypeType
+   #TypeFloat
+   #TypeInteger
+   #TypeHexadecimal
+   #TypeConstant
+   #TypeDeclareReference
+   #TypeVariableReference
+   #TypeVariableDeclare
+   #TypeVariable
+   #TypeOpenParameter
+   #TypeCloseParameter
+   #TypeOpenBracket
+   #TypeCloseBracket
+   #TypeDelimiter
+   #TypeOperatorEqual
+   #TypeOperatorNotEqual
+   #TypeOperatorGreaterEqual
+   #TypeOperatorLessEqual
+   #TypeOperatorGreater
+   #TypeOperatorLess
+   #TypeOperatorAdd
+   #TypeOperatorNegate
+   #TypeOperatorSubtract
+   #TypeOperatorMultiply
+   #TypeOperatorDivide
+   #TypeOperatorBitwiseNot
+   #TypeOperatorBitwiseAnd
+   #TypeOperatorBitwiseOr
+   #TypeOperatorBitwiseXOr
+   #TypeOperatorModulo
+   #TypeEndLine
+   #TypeUnknown
+EndEnumeration
+
+; Regex for tokenizing the language
+#Group                     = "|"
+
+#WhiteSpace                = "([\t]+|[ ]+)"
+#Comment                   = "(;+.*)"
+#ProcedureReference        = "([@][a-zA-Z0-9][a-zA-Z0-9_]*)(?=[ ]*\\()"
+#Procedure                 = "([a-zA-Z0-9][a-zA-Z0-9_]*)(?=[ ]*\\()"
+#Container                 = "([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:[\\.][a-zA-Z0-9]+)?[ ]*\\[)"
+#KeywordDeclare            = "((?i)declare(?=\\.| ))"
+#KeywordExternalProcedure  = "((?i)externalprocedure(?=\\.| ))"
+#KeywordEndStructure       = "((?i)endstructure)"
+#KeywordEnumeration        = "((?i)enumeration)"
+#KeywordEndEnumeration     = "((?i)endenumeration)"
+#KeywordNewList            = "((?i)newlist)"
+#KeywordNewMap             = "((?i)newmap)"
+#KeywordNewVector          = "((?i)newvector)"
+#KeywordStructure          = "((?i)structure(?=\\ ))"
+#KeywordImport             = "((?i)import(?= ))"
+#KeywordGlobal             = "((?i)global(?= ))"
+#KeywordSelect             = "((?i)select(?= ))"
+#KeywordCase               = "((?i)case(?= ))"
+#KeywordDefault            = "((?i)default)"
+#KeywordEndSelect          = "((?i)endselect)"
+#KeywordWhile              = "((?i)while(?= ))"
+#KeywordWend               = "((?i)wend)"
+#KeywordIf                 = "((?i)if(?= ))"
+#KeywordAnd                = "((?i)and(?= ))"
+#KeywordOr                 = "((?i)or(?= ))"
+#KeywordElseIf             = "((?i)elseif(?= ))"
+#KeywordElse               = "((?i)else)"
+#KeywordEndIf              = "((?i)endif)"
+#KeywordFor                = "((?i)for(?= ))"
+#KeywordTo                 = "((?i)to(?= ))"
+#KeywordStep               = "((?i)step(?= ))"
+#KeywordNext               = "((?i)next)"
+#KeywordBreak              = "((?i)break)"
+#KeywordEndProcedure       = "((?i)endprocedure)"
+#KeywordProcedureReturn    = "((?i)procedurereturn(?=$| )|return(?=$| ))"
+#KeywordProcedure          = "((?i)procedure(?=\\.| ))"
+#KeywordTLink              = "((?i)tlink(?= ))"
+#KeywordTConstant          = "((?i)tconstant(?=\\.))"
+#KeywordTInitialize        = "((?i)tinitialize(?= ))"
+#KeywordTIncludeFile       = "((?i)tincludefile(?= ))"
+#KeywordXIncludeFile       = "((?i)xincludefile(?= ))"
+#KeywordIncludeFile        = "((?i)includefile(?= ))"
+#KeywordEnd                = "((?i)end(?= ))"
+#CompilerCallDebugger      = "((?i)calldebugger)"
+#CompilerDebug             = "((?i)debug(?= ))"
+#CompilerPrint             = "((?i)compilerprint(?= ))"
+#CompilerConfigure         = "((?i)compilerconfigure)"
+#String                    = "(\"(?:[^\\\\\"]+|\\\\.)*\")"
+#Import                    = "([<].+[>][ ]*(?=$))"
+#Dereference               = "([\\\\])"
+#Type                      = "([\\.][a-zA-Z0-9]+)"
+#Float                     = "([0-9]+[\\.][0-9]+)"
+#Integer                   = "([0-9]+)"
+#Hexadecimal               = "([\\$][0][xX][0-9a-fA-F]+)"
+#Constant                  = "([#][a-zA-Z0-9_]+)"
+#DeclareReference          = "([@][a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:[\\.][a-zA-Z0-9]+))"
+#VariableReference         = "([@][a-zA-Z0-9][a-zA-Z0-9_]*)"
+#VariableDeclare           = "([a-zA-Z0-9][a-zA-Z0-9_]*)(?=(?:[\\.][a-zA-Z0-9]+))"
+#Variable                  = "([a-zA-Z0-9][a-zA-Z0-9_]*)"
+#OpenParenthesis           = "([\\(])"
+#CloseParenthesis          = "([\\)])"
+#OpenBracket               = "([\\[])"
+#CloseBracket              = "([\\]])"
+#Delimiter                 = "([\\,])"
+#OperatorEqual             = "([=])"
+#OperatorNotEqual          = "([!][=])"
+#OperatorGreaterEqual      = "([>][=])"
+#OperatorLesserEqual       = "([<][=])"
+#OperatorGreater           = "([>])"
+#OperatorLesser            = "([<])"
+#OperatorAdd               = "([\\+])"
+#OperatorNegate            = "([\\-](?=(?:[ ]*)(?:[0-9]+)|(?:[0-9]+[\\.][0-9]+)))"
+#OperatorSubtract          = "([\\-])"
+#OperatorMultiply          = "([\\*])"
+#OperatorDivide            = "([\\/])"
+#OperatorBitwiseNot        = "([\\!])"
+#OperatorBitwiseAnd        = "([\\&])"
+#OperatorBitwiseOr         = "([\\|])"
+#OperatorBitwiseXOr        = "([\\^])"
+#OperatorModulo            = "([\\%])"
+#EndLine                   = "([:])"
+#Unknown                   = "([.]++)"
+
+Global Regex.p
+
+Regex = CompileRegularExpression(#WhiteSpace                     + #Group +
+                                 #Comment                        + #Group +
+                                 #ProcedureReference             + #Group +
+                                 #Procedure                      + #Group +
+                                 #Container                      + #Group +
+                                 #KeywordDeclare                 + #Group +
+                                 #KeywordExternalProcedure       + #Group +
+                                 #KeywordEndStructure            + #Group +
+                                 #KeywordStructure               + #Group +
+                                 #KeywordEnumeration             + #Group +
+                                 #KeywordEndEnumeration          + #Group +
+                                 #KeywordNewList                 + #Group +
+                                 #KeywordNewMap                  + #Group +
+                                 #KeywordNewVector               + #Group +
+                                 #KeywordImport                  + #Group +
+                                 #KeywordGlobal                  + #Group +
+                                 #KeywordSelect                  + #Group +
+                                 #KeywordCase                    + #Group +
+                                 #KeywordDefault                 + #Group +
+                                 #KeywordEndSelect               + #Group +
+                                 #KeywordWhile                   + #Group +
+                                 #KeywordWend                    + #Group +
+                                 #KeywordIf                      + #Group +
+                                 #KeywordAnd                     + #Group +
+                                 #KeywordOr                      + #Group +
+                                 #KeywordElseIf                  + #Group +
+                                 #KeywordElse                    + #Group +
+                                 #KeywordEndIf                   + #Group +
+                                 #KeywordFor                     + #Group +
+                                 #KeywordTo                      + #Group +
+                                 #KeywordStep                    + #Group +
+                                 #KeywordNext                    + #Group +
+                                 #KeywordBreak                   + #Group +
+                                 #KeywordEndProcedure            + #Group +
+                                 #KeywordProcedureReturn         + #Group +
+                                 #KeywordProcedure               + #Group +
+                                 #KeywordTLink                   + #Group +
+                                 #KeywordTConstant               + #Group +
+                                 #KeywordTInitialize             + #Group +
+                                 #KeywordTIncludeFile            + #Group +
+                                 #KeywordXIncludeFile            + #Group +
+                                 #KeywordIncludeFile             + #Group +
+                                 #KeywordEnd                     + #Group +
+                                 #CompilerCallDebugger           + #Group +
+                                 #CompilerDebug                  + #Group +
+                                 #CompilerPrint                  + #Group +
+                                 #CompilerConfigure              + #Group +
+                                 #String                         + #Group +
+                                 #Import                         + #Group +
+                                 #Dereference                    + #Group +
+                                 #Type                           + #Group +
+                                 #Float                          + #Group +
+                                 #Integer                        + #Group +
+                                 #Hexadecimal                    + #Group +
+                                 #Constant                       + #Group +
+                                 #DeclareReference               + #Group +
+                                 #VariableReference              + #Group +
+                                 #VariableDeclare                + #Group +
+                                 #Variable                       + #Group +
+                                 #OpenParenthesis                + #Group +
+                                 #CloseParenthesis               + #Group +
+                                 #OpenBracket                    + #Group +
+                                 #CloseBracket                   + #Group +
+                                 #Delimiter                      + #Group +
+                                 #OperatorEqual                  + #Group +
+                                 #OperatorNotEqual               + #Group +
+                                 #OperatorGreaterEqual           + #Group +
+                                 #OperatorLesserEqual            + #Group +
+                                 #OperatorGreater                + #Group +
+                                 #OperatorLesser                 + #Group +
+                                 #OperatorAdd                    + #Group +
+                                 #OperatorNegate                 + #Group +
+                                 #OperatorSubtract               + #Group +
+                                 #OperatorMultiply               + #Group +
+                                 #OperatorDivide                 + #Group +
+                                 #OperatorBitwiseNot             + #Group +
+                                 #OperatorBitwiseAnd             + #Group +
+                                 #OperatorBitwiseOr              + #Group +
+                                 #OperatorBitwiseXOr             + #Group +
+                                 #OperatorModulo                 + #Group +
+                                 #EndLine                        + #Group +
+                                 #Unknown)
+
+If Regex = 0
+   
+   ConsoleTextBold() : ConsoleTextColor(1) :    Print("Error")
+   ResetConsole() : ConsoleTextBold() :         PrintN(": Could not compile regular expression.")
+   
+   End #Exit_Failure
+   
+EndIf

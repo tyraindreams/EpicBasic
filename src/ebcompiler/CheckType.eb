@@ -1,0 +1,58 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic CheckType                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure.b CheckType()
+   
+   CurrentToken.s = LCase(Token())
+   
+   If CurrentToken = ".b"
+      
+      ProcedureReturn #VariableTypeByte
+      
+   ElseIf CurrentToken = ".c"
+      
+      ProcedureReturn #VariableTypeCharacter
+      
+   ElseIf CurrentToken = ".w"
+      
+      ProcedureReturn #VariableTypeWord
+      
+   ElseIf CurrentToken = ".i"
+      
+      ProcedureReturn #VariableTypeInteger
+      
+   ElseIf CurrentToken = ".l"
+      
+      ProcedureReturn #VariableTypeLong
+      
+   ElseIf CurrentToken = ".q"
+      
+      ProcedureReturn #VariableTypeQuad
+      
+   ElseIf CurrentToken = ".p"
+      
+      ProcedureReturn #VariableTypePointer
+      
+   ElseIf CurrentToken = ".f"
+      
+      ProcedureReturn #VariableTypeFloat
+      
+   ElseIf CurrentToken = ".d"
+      
+      ProcedureReturn #VariableTypeDouble
+      
+   ElseIf CurrentToken = ".s"
+      
+      ProcedureReturn #VariableTypeString
+      
+   Else
+      
+      ProcedureReturn #VariableTypeStructure
+      
+   EndIf
+   
+EndProcedure

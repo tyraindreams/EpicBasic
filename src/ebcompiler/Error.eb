@@ -1,0 +1,153 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Compiler Error                    
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure Error(Error.s, Path.s, LineString.s, Line.i, Position.i)
+   
+   PrintN("")
+   ConsoleTextBold() : ConsoleTextColor(4) :    Print(Path)
+   ResetConsole() : ConsoleTextBold() :         Print(":"+Str(Line)+":"+Str(Position)+": ")
+   ConsoleTextColor(1) :                        Print("Error")
+   ResetConsole() : ConsoleTextBold() :         PrintN(": "+Error)
+                                                Print(Str(Line)+" ||")
+   ResetConsole() :                             PrintN(" "+LineString)
+   ConsoleTextColor(1) : ConsoleTextBold() :    Print(Space(Len(Str(Line))-1)+"E ||")
+   ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+"^" + RepeatString("~", Len(Token())-1))
+   PrintN("")
+   
+   CallDebugger
+   
+   ProcedureReturn
+   
+EndProcedure
+
+
+Procedure Warning(Warning.s, Path.s, LineString.s, Line.i, Position.i)
+   
+   If WarningThreshold > TotalWarnings
+      
+      PrintN("")
+      ConsoleTextBold() : ConsoleTextColor(4) :    Print(Path)
+      ResetConsole() : ConsoleTextBold() :         Print(":"+Str(Line)+":"+Str(Position)+": ")
+      ConsoleTextColor(5) :                        Print("Warning")
+      ResetConsole() : ConsoleTextBold() :         PrintN(": "+Warning)
+                                                   Print(Str(Line)+" ||")
+      ResetConsole() :                             PrintN(" "+LineString)
+      ConsoleTextColor(5) : ConsoleTextBold() :    Print(Space(Len(Str(Line))-1)+"W ||")
+      ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+"^" + RepeatString("~", Len(Token())-1))
+      PrintN("")
+      
+      TotalWarnings + 1
+      
+      If TotalWarnings = WarningThreshold
+         
+         ResetConsole() : ConsoleTextBold() :      PrintN("\nWarning threshold was reached. No more warnings will be reported.\n")
+         
+      EndIf
+      
+   Else
+      
+      TotalWarnings + 1
+      
+   EndIf
+   
+   ProcedureReturn
+   
+EndProcedure
+
+
+Procedure ErrorNote(Note.s, Path.s, LineString.s, Line.i, Position.i)
+   
+   PrintN("")
+   ConsoleTextBold() : ConsoleTextColor(4) :    Print(Path)
+   ResetConsole() : ConsoleTextBold() :         Print(":"+Str(Line)+":"+Str(Position)+": ")
+   ConsoleTextColor(7) :                        Print("Note")
+   ResetConsole() : ConsoleTextBold() :         PrintN(": "+Note)
+                                                Print(Str(Line)+" ||")
+   ResetConsole() :                             PrintN(" "+LineString)
+   ConsoleTextColor(7) : ConsoleTextBold() :    Print(Space(Len(Str(Line))-1)+"N ||")
+   ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+"^" + RepeatString("~", Len(Token())-1))
+   PrintN("")
+   
+   ProcedureReturn
+   
+EndProcedure
+
+
+Procedure Note(Note.s, Path.s, LineString.s, Line.i, Position.i)
+   
+   If WarningThreshold > TotalWarnings
+      PrintN("")
+      ConsoleTextBold() : ConsoleTextColor(4) :    Print(Path)
+      ResetConsole() : ConsoleTextBold() :         Print(":"+Str(Line)+":"+Str(Position)+": ")
+      ConsoleTextColor(7) :                        Print("Note")
+      ResetConsole() : ConsoleTextBold() :         PrintN(": "+Note)
+                                                   Print(Str(Line)+" ||")
+      ResetConsole() :                             PrintN(" "+LineString)
+      ConsoleTextColor(7) : ConsoleTextBold() :    Print(Space(Len(Str(Line))-1)+"N ||")
+      ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+"^" + RepeatString("~", Len(Token())-1))
+      PrintN("")
+   EndIf
+   
+   ProcedureReturn
+   
+EndProcedure
+
+
+Procedure ErrorSuggest(Error.s, Suggest.s, Path.s, LineString.s, Line.i, Position.i)
+   
+   PrintN("")
+   ConsoleTextBold() : ConsoleTextColor(4) :    Print(Path)
+   ResetConsole() : ConsoleTextBold() :         Print(":"+Str(Line)+":"+Str(Position)+": ")
+   ConsoleTextColor(1) :                        Print("Error")
+   ResetConsole() : ConsoleTextBold() :         PrintN(": "+Error)
+                                                Print(Str(Line)+" ||")
+   ResetConsole() :                             PrintN(" "+LineString)
+   ConsoleTextColor(1) : ConsoleTextBold() :    Print(Space(Len(Str(Line))-1)+"E ||")
+   ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+"^" + RepeatString("~", Len(Token())-1))
+   ConsoleTextColor(2) :                        Print(Space(Len(Str(Line))-1)+"S ||")
+   ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+Suggest)
+   PrintN("")
+   
+   ProcedureReturn
+   
+EndProcedure
+
+
+Procedure WarningSuggest(Warning.s, Suggest.s, Path.s, LineString.s, Line.i, Position.i)
+   
+   If WarningThreshold > TotalWarnings
+      
+      PrintN("")
+      ConsoleTextBold() : ConsoleTextColor(4) :    Print(Path)
+      ResetConsole() : ConsoleTextBold() :         Print(":"+Str(Line)+":"+Str(Position)+": ")
+      ConsoleTextColor(5) :                        Print("Warning")
+      ResetConsole() : ConsoleTextBold() :         PrintN(": "+Warning)
+                                                   Print(Str(Line)+" ||")
+      ResetConsole() :                             PrintN(" "+LineString)
+      ConsoleTextColor(5) : ConsoleTextBold() :    Print(Space(Len(Str(Line))-1)+"W ||")
+      ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+"^" + RepeatString("~", Len(Token())-1))
+      ConsoleTextColor(2) :                        Print(Space(Len(Str(Line))-1)+"S ||")
+      ResetConsole() : ConsoleTextBold() :         PrintN(Space(Position)+Suggest)
+      PrintN("")
+      
+      TotalWarnings + 1
+      
+      If TotalWarnings = WarningThreshold
+         
+         ResetConsole() : ConsoleTextBold() :      PrintN("\nWarning threshold was reached. No more warnings will be reported.\n")
+         
+      EndIf
+      
+   Else
+      
+      TotalWarnings + 1
+      
+   EndIf
+   
+   ProcedureReturn
+   
+EndProcedure

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE language SYSTEM "language.dtd"> 
+<language name="EpicBasic" version="1.1.0" kateversion="3.14" section="Sources" extensions="*.eb;*.ebi;" mimetype="text/x-epicbasic" author="Alexander Clay (Tuireann@EpicBasic.org)" license="CC0" priority="1" >
+  <highlighting>
+      <list name="Keywords">
+         <item> Import </item>
+         <item> Break </item>
+         <item> For </item>
+         <item> To </item>
+         <item> Step </item>
+         <item> Next </item>
+         <item> If </item>
+         <item> Else </item>
+         <item> ElseIf </item>
+         <item> EndIf </item>
+         <item> And </item>
+         <item> Or </item>
+         <item> Repeat </item>
+         <item> Until </item>
+         <item> Select </item>
+         <item> Case </item>
+         <item> Default </item>
+         <item> EndSelect </item>
+         <item> While </item>
+         <item> Wend </item>
+         <item> End </item>
+         <item> Structure </item>
+         <item> EndStructure </item>
+         <item> Enumeration </item>
+         <item> EndEnumeration </item>
+         <item> Global </item>
+         <item> Procedure </item>
+         <item> InlineProcedure </item>
+         <item> ExternalProcedure </item>
+         <item> EndProcedure </item>
+         <item> ProcedureReturn </item>
+         <item> Shared </item>
+         <item> Protected </item>
+         <item> Static </item>
+         <item> Declare </item>
+         <item> IncludeFile </item>
+         <item> XIncludeFile </item>
+         <item> TIncludeFile </item>
+         <item> TInitialize </item>
+         <item> TConstant </item>
+         <item> TLink </item>
+         <item> Return </item>
+      </list>
+      <list name="CompilerKeywords">
+         <item> CallDebugger </item>
+         <item> Debug </item>
+         <item> CompilerPrint </item>
+         <item> CompilerConfigure </item>
+      </list>
+    <contexts>
+      <context attribute="Normal Text" lineEndContext="#stay" name="Normal">
+         
+        <RegExpr attribute="Comment" context="#stay" String="(;.*)"/>
+        
+        <RegExpr attribute="Import" context="#stay" String="([&lt;].+[&gt;])"/>
+        
+        <AnyChar attribute="Operator" String="-+*/%^!|&amp;=&lt;&gt;" context="#stay"/>
+        
+        <AnyChar attribute="Separator" String=",:()[]\" context="#stay"/>
+        
+        <RegExpr attribute="Procedures" context="#stay" String="([a-zA-Z0-9_]+)(?=[ ]*\()"/>
+        
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*if[ ]" insensitive="true" beginRegion="IfRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*endif$" insensitive="true" endRegion="IfRegion"/>
+        
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*select[ ]" insensitive="true" beginRegion="SelectRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*endselect$" insensitive="true" endRegion="SelectRegion"/>
+        
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*while[ ]" insensitive="true" beginRegion="WhileRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*wend$" insensitive="true" endRegion="WhileRegion"/>
+
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*for[ ]" insensitive="true" beginRegion="ForRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*next$" insensitive="true" endRegion="ForRegion"/>
+
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*procedure[ ]" insensitive="true" beginRegion="ProcedureRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*endprocedure$" insensitive="true" endRegion="ProcedureRegion"/>
+
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*structure[ ]" insensitive="true" beginRegion="StructureRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*endstructure$" insensitive="true" endRegion="StructureRegion"/>
+
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*enumeration$" insensitive="true" beginRegion="EnumerationRegion"/>
+        <RegExpr attribute="Keyword" context="#stay" String="^[ ]*endenumeration$" insensitive="true" endRegion="EnumerationRegion"/>
+        
+        <keyword attribute="Keyword" context="#stay" String="Keywords" insensitive="true"/>    
+        <keyword attribute="CompilerKeyword" context="#stay" String="CompilerKeywords" insensitive="true"/>
+        
+        <RegExpr attribute="Type" context="#stay" String="([\.][a-zA-Z0-9]+)"/>
+        
+        <RegExpr attribute="Constant" context="#stay" String="([#][a-zA-Z0-9_]+)"/>
+        
+        <RegExpr attribute="Number" context="#stay" String="([\$][0][xX][0-9a-fA-F]+)"/>
+        <Float attribute="Number" context="#stay"/>
+        <Int attribute="Number" context="#stay"/>
+                
+        <RegExpr attribute="String" context="#stay" String="(\&quot;(?:[^&quot;\\]|\\.)*\&quot;)"/>
+        
+        </context>
+         <context attribute="Comment" lineEndContext="#stay" name="Comment"/>
+     </contexts>
+    <itemDatas>
+      <itemData name="Normal Text" defStyleNum="dsNormal"/>
+      <itemData name="Type" defStyleNum="dsType"/>
+      <itemData name="Operator" defStyleNum="dsNormal"/>
+      <itemData name="Separator" defStyleNum="dsNormal"/>
+      <itemData name="Keyword" defStyleNum="dsKeyword"/>
+      <itemData name="CompilerKeyword" defStyleNum="dsKeyword"/>
+      <itemData name="Procedures" defStyleNum="dsFunction"/>
+      <itemData name="Constant" defStyleNum="dsDataType"/>
+      <itemData name="Number" defStyleNum="dsDecVal"/>
+      <itemData name="Import" defStyleNum="dsString"/>
+      <itemData name="String" defStyleNum="dsString"/>
+      <itemData name="Comment" defStyleNum="dsComment"/>
+      <itemData name="Region Marker" defStyleNum="dsRegionMarker"/>
+    </itemDatas>
+  </highlighting>
+    <general>
+      <keywords casesensitive="0" />
+      <comments>
+         <comment name="singleLine" start=";" />
+      </comments>
+  </general>
+</language>
+<!-- // kate: space-indent on; indent-width 3; replace-tabs on; -->

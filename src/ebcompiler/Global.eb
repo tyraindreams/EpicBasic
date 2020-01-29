@@ -1,0 +1,232 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Global                    
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure InitializeGlobals()
+   
+   ; Enumerate the Variable types
+   Enumeration
+      #VariableTypeNull
+      #VariableTypeByte
+      #VariableTypeCharacter
+      #VariableTypeWord
+      #VariableTypeLong
+      #VariableTypeInteger
+      #VariableTypeQuad
+      #VariableTypePointer
+      #VariableTypeFloat
+      #VariableTypeDouble
+      #VariableTypeString
+      #VariableTypeStructure
+   EndEnumeration
+   
+   ; Enumerate the Procedure types
+   Enumeration
+      #IdentifierTypeInternal
+      #IdentifierTypeExternal
+      #IdentifierTypeMacro
+   EndEnumeration
+   
+   ; Enumerate the Block types
+   Enumeration
+      #BlockTypeIf
+      #BlockTypeWhile
+      #BlockTypeFor
+      #BlockTypeSelect
+   EndEnumeration
+   
+   ; Compiler information
+   #CompilerName               = "EpicBasic"
+   #CompilerCompany            = "Epic Crossings"
+   #CompilerVersion            = "0.2.0"
+   
+   CompilerConfigure.s #DefaultModuleSearchPath = "/usr/share/epicbasic/modules/:/usr/local/share/epicbasic/modules/"
+   CompilerConfigure.s #DefaultHeaderSearchPath = "/usr/share/epicbasic/modules/:/usr/local/share/epicbasic/modules/"
+   CompilerConfigure.s #DefaultHomePath         = "/usr/share/epicbasic/"
+
+   Global CompilerVersion.s
+   
+   CompilerVersion = #CompilerName + " " + #CompilerVersion + " (" + #CompilerPlatform + " - " + #CompilerArchitecture + ")"
+   
+   Global TotalLines.i
+   Global TotalWarnings.i
+   Global WarningThreshold.i
+   Global OLevel.s
+   
+   Global SyntaxCheck.b
+   Global CommentedOnly.b
+   Global ConfigureDefaults.b
+   Global CommentPassthrough.b
+   Global InlineHeader.b
+   Global DebuggerFlag.b
+   Global DebuggerReference.p
+   
+   SyntaxCheck = #False
+   CommentedOnly = #False
+   ConfigureDefaults = #False
+   CommentPassthrough = #False
+   InlineHeader = #False
+   DebuggerFlag = #False
+   
+   DebuggerReference = NewMap(0)
+   
+   Global MainPath.s
+   Global ExecutablePath.s
+   Global HomePath.s
+   Global ModulePath.p
+   Global HeaderPath.p
+   
+   HeaderPath = NewMap(0)
+   Path.s = GetEnvironmentVariable("EPICBASIC_HEADER_PATH")
+   
+   If Path = ""
+      
+      Path = #DefaultHeaderSearchPath
+      
+   EndIf
+   
+   If CountString(Path, ":") = 0
+      
+      SetMapElement(HeaderPath, Path)
+      
+   Else
+      
+      For c.i = 0 To CountString(Path, ":") + 2 Step 1
+         
+         SetMapElement(HeaderPath, StringField(Path, c, ":"))
+         
+      Next
+      
+   EndIf
+   
+   ModulePath = NewMap(0)
+   Path = GetEnvironmentVariable("EPICBASIC_MODULE_PATH")
+   
+   If Path = ""
+      
+      Path = #DefaultModuleSearchPath
+      
+   EndIf
+   
+   If CountString(Path, ":") = 0
+      
+      SetMapElement(ModulePath, Path)
+      
+   Else
+      
+      For c = 0 To CountString(Path, ":") + 2 Step 1
+         
+         SetMapElement(ModulePath, StringField(Path, c, ":"))
+         
+      Next
+      
+   EndIf
+   
+   HomePath = GetEnvironmentVariable("EPICBASIC_HOME_PATH")
+   
+   If HomePath = ""
+      
+      HomePath = #DefaultHomePath
+      
+   EndIf
+   
+   Global WorkingEmit.s
+   
+   Structure Files
+      Tokens.p
+      Lines.p
+   EndStructure
+   
+   Global Files.p
+   Files = NewMap(#SizeOf_Files)
+   
+   Global ActiveLines.p
+   Global ActiveTokenTable.p
+   
+   Global TInitializeMap.p
+   Global TIncludeFileMap.p
+   Global ImportMap.p
+   Global TLinkMap.p
+   
+   TInitializeMap = NewMap(0)
+   TIncludeFileMap = NewMap(0)
+   
+   SetMapElement(TIncludeFileMap, "string")
+   SetMapElement(TIncludeFileMap, "cstdlib")
+   SetMapElement(TIncludeFileMap, "stddef.h")
+   
+   ImportMap = NewMap(0)
+   TLinkMap = NewMap(0)
+   
+   
+   Global ProcedureList.p
+   ; Just an emit queue for procedure order that makes use of the unordered nature of this fake map implementation
+   ProcedureList = NewMap(0)
+   
+   Structure Procedures
+      ProcedureType.b
+      ReturnType.b
+      Parameters.p
+      Variables.p
+      Emit.p
+      BlockLevel.p
+      DeclaredPath.p
+      DeclaredLine.l
+      Declared.b
+   EndStructure
+   
+   Global ProcedureMap.p
+   ProcedureMap = NewMap(#SizeOf_Procedures)
+   
+   Global ActiveProcedure.p
+   
+   Structure Variables
+      Type.b
+      MetaType.p
+      DeclaredPath.p
+      DeclaredLine.l
+      Position.l
+      Reference.b
+   EndStructure
+   
+   Structure BlockLevel
+      Type.b
+      SpecialFlag.b
+      Expression.p
+      ExpressionType.b
+   EndStructure
+   
+   Structure Globals
+      GlobalType.b
+      DeclaredPath.p
+      DeclaredLine.l
+      Position.l
+   EndStructure
+   
+   Global GlobalMap.p
+   GlobalMap = NewMap(#SizeOf_Globals)
+   
+   Structure Structures
+      Fields.p
+      DeclaredIn.p
+      DeclaredLine.l
+   EndStructure
+   
+   Global StructureMap.p
+   StructureMap = NewMap(#SizeOf_Structures)
+   
+   Structure Constants
+      ConstantType.b
+      Macro.p
+      VariableType.b
+      DeclaredPath.p
+      DeclaredLine.l
+   EndStructure
+   
+   Global ConstantMap.p
+   ConstantMap = NewMap(#SizeOf_Constants)
+   
+EndProcedure

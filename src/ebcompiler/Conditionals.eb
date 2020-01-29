@@ -1,0 +1,546 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Conditionals                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckIf()
+   
+   ConditionalElseIf.b = #False
+   
+   AddProcedureEmit("")
+   
+   TokenType.b = TokenType()
+   
+   If TokenType = #TypeKeywordElseIf
+      
+      ConditionalElseIf = #True
+      
+      If BlockLevelSpecialFlag() = #True
+      
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. ElseIf cannot follow an Else.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+      
+      EndIf
+      
+      If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeIf
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. ElseIf without an If.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      WorkingEmit = "} else if ( "
+      
+   Else
+      
+      IncreaseBlockLevel(#BlockTypeIf)
+      
+      WorkingEmit = "if ( "
+      
+   EndIf
+   
+   While TokenType() != #TypeEndLine
+      
+      NextToken()
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeInteger Or TokenType = #TypeFloat
+         
+         CompareExpression()
+         
+      ElseIf TokenType = #TypeVariableDeclare
+         
+         VariableName.s = Token()
+         
+         NextToken()
+         
+         CurrentType.b = CheckType()
+         
+         PreviousElement(ActiveTokenTable)
+         
+         If CurrentType = #VariableTypeString
+            
+            CompareConcatenate()
+            
+         Else
+            
+            CompareExpression()
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeVariable
+         
+         VariableName = Token()
+         
+         If VariableType(VariableName) = #VariableTypeNull
+            
+            CompareExpression()
+            
+         Else
+            
+            CurrentType = VariableType(VariableName)
+            
+            If CurrentType = #VariableTypeString
+               
+               CompareConcatenate()
+               
+            Else
+               
+               CompareExpression()
+               
+            EndIf
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeConstant
+         
+         If ConstantType(Token()) = #VariableTypeString
+            
+            CompareConcatenate()
+            
+         Else
+            
+            CompareExpression()
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeProcedure
+         
+         If ProcedureReturnType(Token()) = #VariableTypeString
+            
+            CompareConcatenate()
+            
+         Else
+            
+            CompareExpression()
+            
+         EndIf
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeKeywordAnd
+            
+            WorkingEmit + "&& "
+         
+      ElseIf TokenType = #TypeKeywordOr
+         
+         WorkingEmit + "|| "
+         
+      EndIf
+      
+   Wend
+   
+   WorkingEmit + ") { "
+   
+   PreviousElement(ActiveTokenTable)
+   
+   If DebuggerFlag = #True And ConditionalElseIf = #False
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   AddDeBlockedProcedureEmit(WorkingEmit)
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure
+
+
+Procedure CheckElse()
+   
+   If BlockLevelSpecialFlag() = #True
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Else can only be used once per conditional.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetBlockLevelSpecialFlag()
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeIf
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Else without an If.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+   
+   AddDeBlockedProcedureEmit("} else { ")
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure
+
+
+Procedure CheckEndIf()
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeIf
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. EndIf without an If.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   AddDeBlockedProcedureEmit("}")
+   
+   GarbageCheck()
+   
+   DecreaseBlockLevel()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure
+
+
+Procedure CheckSelect()
+   
+   NextToken()
+   
+   TokenType.b = TokenType()
+   
+   If TokenType = #TypeInteger Or TokenType = #TypeHexadecimal
+      
+      CurrentType.b = #VariableTypeInteger
+      
+      CheckExpression(CurrentType)
+      
+   ElseIf TokenType = #TypeFloat
+      
+      CurrentType = #VariableTypeFloat
+      
+      CheckExpression(CurrentType)
+      
+   ElseIf TokenType = #TypeString
+      
+      CurrentType = #VariableTypeString
+      
+      CheckConcatenate()
+      
+   ElseIf TokenType = #TypeVariableDeclare
+      
+      VariableName.s = Token()
+      
+      NextToken()
+      
+      CurrentType = CheckType()
+      
+      PreviousElement(ActiveTokenTable)
+      
+      If CurrentType = #VariableTypeString
+         
+         CheckConcatenate()
+         
+      Else
+         
+         CheckExpression(CurrentType)
+         
+      EndIf
+      
+   ElseIf TokenType = #TypeVariable
+      
+      VariableName = Token()
+      
+      If VariableType(VariableName) = #VariableTypeNull
+         
+         CurrentType = #VariableTypeInteger
+         
+         CheckExpression(CurrentType)
+         
+      Else
+         
+         CurrentType = VariableType(VariableName)
+         
+         If CurrentType = #VariableTypeString
+            
+            CheckConcatenate()
+            
+         Else
+            
+            CheckExpression(CurrentType)
+            
+         EndIf
+         
+      EndIf
+      
+   ElseIf TokenType = #TypeConstant
+      
+      If ConstantType(Token()) = #VariableTypeString
+         
+         CompareConcatenate()
+         
+      Else
+         
+         CompareExpression()
+         
+      EndIf
+      
+   ElseIf TokenType = #TypeProcedure
+      
+      If ProcedureReturnType(Token()) = #VariableTypeString
+         
+         CurrentType = #VariableTypeString
+         
+         CompareConcatenate()
+         
+      Else
+         
+         CurrentType = #VariableTypeInteger
+         
+         CompareExpression()
+         
+      EndIf
+      
+   Else
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+   
+   IncreaseBlockLevel(#BlockTypeSelect)
+   
+   SetBlockLevelExpression(WorkingEmit)
+   
+   If CurrentType = #VariableTypeString
+      
+      SetBlockLevelExpressionType(#VariableTypeString)
+      
+   Else
+      
+      SetBlockLevelExpressionType(CurrentType)
+      
+   EndIf
+   
+   WorkingEmit = ""
+   
+   PreviousElement(ActiveTokenTable)
+   
+   GarbageCheck()
+   
+   SeekToken()
+   
+   If TokenType() != #TypeKeywordCase
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Expected Case.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   WorkingEmit = "if ( " + BlockLevelExpression() + "== "
+   
+   NextToken()
+   
+   CurrentType = BlockLevelExpressionType()
+   
+   If CurrentType = #VariableTypeString
+      
+      CheckConcatenate()
+      
+   Else
+      
+      CheckExpression(CurrentType)
+      
+   EndIf
+   
+   WorkingEmit + ") { "
+   
+   PreviousElement(ActiveTokenTable)
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   AddDeBlockedProcedureEmit(WorkingEmit)
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+   
+EndProcedure
+
+
+Procedure CheckCase()
+   
+   If BlockLevelSpecialFlag() = #True
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Case cannot come after Default.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeSelect
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Case without a Select.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   WorkingEmit = "} else if ( " + BlockLevelExpression() + "== "
+   
+   NextToken()
+   
+   While 1
+      
+      CurrentType.b = BlockLevelExpressionType()
+      
+      If CurrentType = #VariableTypeString
+         
+         CheckConcatenate()
+         
+      Else
+         
+         CheckExpression(CurrentType)
+         
+      EndIf
+      
+      If TokenType() = #TypeDelimiter
+         
+         WorkingEmit + "|| " + BlockLevelExpression() + "== "
+         
+         NextToken()
+         
+      Else
+         
+         Break
+         
+      EndIf
+      
+   Wend
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit + ") { "
+   
+   PreviousElement(ActiveTokenTable)
+   
+   AddDeBlockedProcedureEmit(WorkingEmit)
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+   
+EndProcedure
+
+
+Procedure CheckDefault()
+   
+   If BlockLevelSpecialFlag() = #True
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Default can only be used once per conditional.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetBlockLevelSpecialFlag()
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeSelect
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Default without a Select.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+   
+   AddDeBlockedProcedureEmit("} else { ")
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure
+
+Procedure CheckEndSelect()
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeSelect
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. EndSelect without a Select.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+
+   AddDeBlockedProcedureEmit("}")
+   
+   GarbageCheck()
+   
+   DecreaseBlockLevel()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure

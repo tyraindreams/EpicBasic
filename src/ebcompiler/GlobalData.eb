@@ -1,0 +1,62 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic GlobalData                               
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure AddGlobalVariable(Name.s, Type.b)
+   
+   If FindMapKey(GlobalMap, Name)
+      
+      SetMapElement(GlobalMap, Name)
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(Name + " was already declared in the global scope.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      SetMapElement(Files, PeekS(PeekP(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredPath)))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine))
+      
+      ErrorNote(Name + " was declared here.", PeekS(PeekP(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredPath)), PeekS(PeekP(CurrentListElement(PeekP(CurrentMapElement(Files)+#OffsetOf_Files_Lines)))), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine), PeekL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_Position))
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetMapElement(GlobalMap, Name)
+   PokeB(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_GlobalType, Type)
+   PokeP(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredPath, DuplicateString(CurrentMapKey(Files)))
+   PokeL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_DeclaredLine, TokenLine())
+   PokeL(CurrentMapElement(GlobalMap)+#OffsetOf_Globals_Position, TokenPosition())
+   
+EndProcedure
+
+
+Procedure CreateConstant(ConstantName.s, Type.b, Macro.s, Path.s, Line.l, ConstantType.b)
+   
+   If FindMapKey(ConstantMap, ConstantName)
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error(ConstantName + " was already declared.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), 1)
+      
+      SetMapElement(ConstantMap, ConstantName)
+      
+      SetMapElement(Files, PeekS(CurrentMapElement(ConstantMap)+#ByteSize+#PointerSize+#ByteSize))
+      SetElementIndex(PeekP(CurrentMapElement(Files)+#PointerSize), PeekL(CurrentMapElement(ConstantMap)+#ByteSize+#PointerSize+#ByteSize+#PointerSize))
+      
+      ErrorNote(ConstantName + " was declared here.", PeekS(PeekP(CurrentMapElement(ConstantMap)+#ByteSize+#PointerSize+#ByteSize)), PeekS(PeekP(PeekP(CurrentMapElement(Files)+#ByteSize+#PointerSize))), PeekL(CurrentMapElement(ConstantMap)+#ByteSize+#PointerSize+#ByteSize+#PointerSize), 1)
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SetMapElement(ConstantMap, ConstantName)
+   
+   CurrentConstant.p = CurrentMapElement(ConstantMap)
+   PokeB(CurrentConstant, ConstantType)
+   PokeP(CurrentConstant+#ByteSize, DuplicateString(Macro))
+   PokeB(CurrentConstant+#ByteSize+#PointerSize, Type)
+   PokeP(CurrentConstant+#ByteSize+#PointerSize+#ByteSize, DuplicateString(Path))
+   PokeL(CurrentConstant+#ByteSize+#PointerSize+#ByteSize+#PointerSize, Line)
+   
+EndProcedure

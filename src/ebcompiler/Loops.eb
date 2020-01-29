@@ -1,0 +1,338 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Loops                     
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckFor()
+   
+   AddProcedureEmit("")
+   
+   IncreaseBlockLevel(#BlockTypeFor)
+   
+   WorkingEmit = "for ( "
+   
+   SeekToken()
+   
+   If TokenType() = #TypeVariable Or TokenType() = #TypeVariableDeclare
+      
+      If TokenType() = #TypeVariableDeclare
+         
+         VariableName.s = Token()
+         
+         NextToken()
+         
+         CurrentType.b = CheckType()
+         AddProcedureVariable(VariableName, CurrentType)
+         
+      ElseIf TokenType() = #TypeVariable
+         
+         VariableName = Token()
+         
+         If VariableType(VariableName) = #VariableTypeNull
+            
+            SetElementIndex(ActiveLines, TokenLine())
+            Warning("Variable type was not explicitly given. Defaulting to Integer.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+            
+            AddProcedureVariable(VariableName, #VariableTypeInteger)
+            
+            CurrentType = #VariableTypeInteger
+            
+         Else
+            
+            CurrentType = VariableType(VariableName)
+            
+         EndIf
+         
+      EndIf
+      
+      NextToken()
+      
+      If TokenType() != #TypeOperatorEqual
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Expected inital assignment with '='.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      If CurrentType = #VariableTypeString
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error. Cannot iterate a string.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      Else
+         
+         WorkingEmit + "_ebV_" + VariableName + " = "
+         
+         SeekToken()
+         
+         CheckExpression(CurrentType)
+         
+      EndIf
+      
+   Else
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Expected variable to iterate.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   If TokenType() != #TypeKeywordTo
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Expected 'To'.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   SeekToken()
+   
+   WorkingEmit + "; _ebV_" + VariableName + " != "
+   
+   CheckExpression(CurrentType)
+   
+   WorkingEmit + "; "
+   
+   If TokenType() = #TypeKeywordStep
+      
+      WorkingEmit + "_ebV_" + VariableName + " = _ebV_" + VariableName + " + "
+      
+      SeekToken()
+      
+      CheckExpression(CurrentType)
+      
+   Else
+      
+      WorkingEmit + "_ebV_" + VariableName + "++ "
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Warning("Step value not specified. Defaulting to 1.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+   EndIf
+   
+   WorkingEmit + ") { "
+   
+   PreviousElement(ActiveTokenTable)
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+
+   AddDeBlockedProcedureEmit(WorkingEmit)
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+   
+EndProcedure
+
+Procedure CheckNext()
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeFor
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Next without a For.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   AddDeBlockedProcedureEmit("}")
+   
+   GarbageCheck()
+   
+   DecreaseBlockLevel()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+   
+EndProcedure
+
+Procedure CheckWhile()
+   
+   AddProcedureEmit("")
+   
+   IncreaseBlockLevel(#BlockTypeWhile)
+   
+   WorkingEmit = "while ( "
+   
+   While TokenType() != #TypeEndLine
+      
+      SeekToken()
+      
+      TokenType.b = TokenType()
+      
+      If TokenType = #TypeInteger Or TokenType = #TypeFloat
+         
+         CompareExpression()
+         
+      ElseIf TokenType = #TypeVariableDeclare
+         
+         VariableName.s = Token()
+         
+         NextToken()
+         
+         CurrentType.b = CheckType()
+         
+         PreviousElement(ActiveTokenTable)
+         
+         If CurrentType = #VariableTypeString
+            
+            CompareConcatenate()
+            
+         Else
+            
+            CompareExpression()
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeVariable
+         
+         VariableName = Token()
+         
+         If VariableType(VariableName) = #VariableTypeNull
+            
+            CompareExpression()
+            
+         Else
+            
+            CurrentType = VariableType(VariableName)
+            
+            If CurrentType = #VariableTypeString
+               
+               CompareConcatenate()
+               
+            Else
+               
+               CompareExpression()
+               
+            EndIf
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeConstant
+         
+         If ConstantType(Token()) = #VariableTypeString
+            
+            CompareConcatenate()
+            
+         Else
+            
+            CompareExpression()
+            
+         EndIf
+         
+      ElseIf TokenType = #TypeProcedure
+         
+         If ProcedureReturnType(Token()) = #VariableTypeString
+            
+            CompareConcatenate()
+            
+         Else
+            
+            CompareExpression()
+            
+         EndIf
+         
+      Else
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Syntax error.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      TokenType = TokenType()
+      
+      If TokenType = #TypeKeywordAnd
+            
+            WorkingEmit + "&& "
+         
+      ElseIf TokenType = #TypeKeywordOr
+         
+         WorkingEmit + "|| "
+         
+      EndIf
+      
+   Wend
+   
+   WorkingEmit + ") { "
+   
+   PreviousElement(ActiveTokenTable)
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   AddDeBlockedProcedureEmit(WorkingEmit)
+   
+   GarbageCheck()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure
+
+Procedure CheckWend()
+   
+   If ElementIndex(PeekP(ActiveProcedure+#OffsetOf_Procedures_BlockLevel)) = 0 Or BlockLevelType() != #BlockTypeWhile
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      Error("Syntax error. Wend without a While.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+   
+   AddProcedureEmit("")
+   
+   If DebuggerFlag = #True
+      
+      SetMapElement(DebuggerReference, CurrentMapKey(Files) + ":" + Str(TokenLine()))
+      
+      AddProcedureEmit("_ebD_CallDebugger(_ebD_Debugger_Flag_LineTrace, _ebD_LineReference" + Str(ElementIndex(DebuggerReference)) + ") ;")
+      
+   EndIf
+   
+   AddDeBlockedProcedureEmit("}")
+   
+   GarbageCheck()
+   
+   DecreaseBlockLevel()
+   
+   AddProcedureEmit("")
+   
+   WorkingEmit = ""
+      
+EndProcedure

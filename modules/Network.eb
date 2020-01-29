@@ -1,0 +1,27 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic <Network>                     
+;                                                                  
+; -----------------------------------------------------------------
+
+TIncludeFile <unistd.h>
+TIncludeFile <cstdlib>
+TIncludeFile <sys/types.h>
+TIncludeFile <sys/socket.h>
+TIncludeFile <netdb.h>
+TIncludeFile <arpa/inet.h>
+TIncludeFile <string>
+TIncludeFile <cstring>
+TIncludeFile <signal.h>
+
+TInitialize <__ebI_InitNetwork() ;>
+
+ExternalProcedure.i CreateNetworkConnection(Address.s, Port.l)
+ExternalProcedure.i CreateNetworkServer(Address.s, Port.l)
+ExternalProcedure.b WaitNetworkEvent(Socket.i, Timeout.l)
+ExternalProcedure.p AcceptServerConnection(Socket.i)
+ExternalProcedure.i ClientFile(Client.p)
+ExternalProcedure.s ClientAddress(Client.p)
+ExternalProcedure   CloseNetworkServer(Socket.i)
+ExternalProcedure   CloseNetworkConnection(Socket.i)
+ExternalProcedure   CloseClientConnection(Client.p)

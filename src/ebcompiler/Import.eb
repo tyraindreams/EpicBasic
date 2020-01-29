@@ -1,0 +1,82 @@
+; -----------------------------------------------------------------
+;                                                                  
+;               EpicBasic Import                                 
+;                               ~ Epic Crossings                   
+;                                                                  
+; -----------------------------------------------------------------
+
+Procedure CheckImport()
+   
+   NextToken()
+
+   If TokenType() = #TypeImport
+      
+      Path.s = CurrentMapKey(Files)
+      IncludePath.s = Mid(Token(), 1, Len(Token())-2)
+      
+      If CommentPassthrough = #True
+         
+         AddProcedureEmit("")
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("// ; Import <" + IncludePath + ">" )
+         AddProcedureEmit("// ; ------------------------------------------------------------------------------------------")
+         AddProcedureEmit("")
+         
+      EndIf
+      
+      ResetElement(ModulePath)
+      
+      Repath.s = ""
+      
+      While NextElement(ModulePath)
+         
+         If PathSize(CurrentMapKey(ModulePath)+IncludePath+".eb") >= 0
+            
+            Repath = CurrentMapKey(ModulePath)
+            Break
+            
+         EndIf
+         
+      Wend
+      
+      If Repath = ""
+         
+         SetElementIndex(ActiveLines, TokenLine())
+         Error("Module was not found in search paths.", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+         
+         End #Exit_Failure
+         
+      EndIf
+      
+      If FindMapKey(Files, Repath+IncludePath) = #False And FindMapKey(ImportMap, IncludePath) = #False
+         
+         TokenIndex.l = ElementIndex(ActiveTokenTable)
+         
+         Print("Importing ") : ConsoleTextColor(4) : Print("<"+IncludePath+">") : ResetConsole() : ConsoleTextBold() : Print("...\n")
+         
+         SetMapElement(ImportMap, IncludePath)
+         
+         TokenizeSourceFile(Repath+IncludePath+".eb")
+         
+         SetFile(Repath+IncludePath+".eb")
+         ResetElement(ActiveTokenTable)
+         
+         CompileCPP11()
+         
+         SetFile(Path)
+         SetElementIndex(ActiveTokenTable, TokenIndex)
+         
+      EndIf
+      
+      GarbageCheck()
+      
+   Else
+      
+      SetElementIndex(ActiveLines, TokenLine())
+      ErrorSuggest("Syntax error. Expected library to import.", "Syntax: Import <Path/File>", CurrentMapKey(Files), PeekS(PeekP(CurrentListElement(ActiveLines))), TokenLine(), TokenPosition())
+      
+      End #Exit_Failure
+      
+   EndIf
+
+EndProcedure
